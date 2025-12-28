@@ -183,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
 
     const emailResponse = await resend.emails.send({
-      from: "AeroLens <onboarding@resend.dev>",
+      from: "AeroLens <noreply@aerolens.live>",
       to: [normalizedEmail],
       subject: "Verify your email - AeroLens",
       html: `
