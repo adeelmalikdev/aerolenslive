@@ -7,79 +7,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Plane, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-interface FlightStatus {
-  flightNumber: string;
-  airline: string;
-  origin: string;
-  destination: string;
-  scheduledDeparture: string;
-  scheduledArrival: string;
-  status: 'on_time' | 'delayed' | 'cancelled' | 'boarding' | 'departed' | 'arrived';
-  gate?: string;
-  terminal?: string;
-  delay?: number;
-}
-
-// Mock flight status data for demo
-const mockFlightStatuses: Record<string, FlightStatus> = {
-  'AA100': {
-    flightNumber: 'AA100',
-    airline: 'American Airlines',
-    origin: 'New York (JFK)',
-    destination: 'London (LHR)',
-    scheduledDeparture: '2025-01-15T18:00:00Z',
-    scheduledArrival: '2025-01-16T06:30:00Z',
-    status: 'on_time',
-    gate: 'B22',
-    terminal: 'T4',
-  },
-  'UA456': {
-    flightNumber: 'UA456',
-    airline: 'United Airlines',
-    origin: 'Los Angeles (LAX)',
-    destination: 'Tokyo (NRT)',
-    scheduledDeparture: '2025-01-15T11:30:00Z',
-    scheduledArrival: '2025-01-16T15:45:00Z',
-    status: 'delayed',
-    gate: 'C15',
-    terminal: 'T7',
-    delay: 45,
-  },
-  'DL789': {
-    flightNumber: 'DL789',
-    airline: 'Delta Airlines',
-    origin: 'Miami (MIA)',
-    destination: 'Paris (CDG)',
-    scheduledDeparture: '2025-01-15T20:15:00Z',
-    scheduledArrival: '2025-01-16T10:30:00Z',
-    status: 'boarding',
-    gate: 'A8',
-    terminal: 'S',
-  },
-};
+import { useFlightStatus, FlightStatus } from '@/hooks/useFlightStatus';
 
 export function FlightStatusForm() {
   const [flightNumber, setFlightNumber] = useState('');
-  const [date, setDate] = useState<Date>();
-  const [flightStatus, setFlightStatus] = useState<FlightStatus | null>(null);
-  const [searched, setSearched] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [date, setDate] = useState<Date>(new Date());
+  const { flightStatus, isLoading, searched, searchFlight } = useFlightStatus();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!flightNumber.trim()) return;
-
-    setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const normalizedFlight = flightNumber.toUpperCase().replace(/\s/g, '');
-    const status = mockFlightStatuses[normalizedFlight] || null;
-    
-    setFlightStatus(status);
-    setSearched(true);
-    setLoading(false);
+    if (!flightNumber.trim() || !date) return;
+    await searchFlight(flightNumber, date);
   };
 
   const getStatusColor = (status: FlightStatus['status']) => {
@@ -120,14 +58,17 @@ export function FlightStatusForm() {
             <Label htmlFor="flight-number">Flight Number</Label>
             <Input
               id="flight-number"
-              placeholder="e.g., AA100, UA456"
+              placeholder="e.g., AA100, BA1234"
               value={flightNumber}
               onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
               className="uppercase"
             />
+            <p className="text-xs text-muted-foreground">
+              Enter airline code + flight number (e.g., AA100, UA456)
+            </p>
           </div>
           <div className="space-y-2">
-            <Label>Flight Date (Optional)</Label>
+            <Label>Flight Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -145,26 +86,22 @@ export function FlightStatusForm() {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={(d) => d && setDate(d)}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
         </div>
-        <Button type="submit" disabled={loading || !flightNumber}>
-          {loading ? 'Checking...' : 'Check Flight Status'}
+        <Button type="submit" disabled={isLoading || !flightNumber || !date}>
+          {isLoading ? 'Checking...' : 'Check Flight Status'}
         </Button>
       </form>
-
-      <div className="text-sm text-muted-foreground">
-        <p>Try these demo flights: AA100, UA456, DL789</p>
-      </div>
 
       {searched && !flightStatus && (
         <div className="bg-muted/50 rounded-lg p-6 text-center">
           <p className="text-muted-foreground">
-            No flight found with that number. Please check and try again.
+            No flight found with that number on the selected date. Please check and try again.
           </p>
         </div>
       )}

@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.send-hotel-booking-confirmation]
 verify_jwt = false
+
+[functions.get-flight-status]
+verify_jwt = false
