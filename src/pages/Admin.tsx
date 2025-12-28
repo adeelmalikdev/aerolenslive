@@ -119,7 +119,7 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="users">
-            <UsersTable users={users} onUserDeleted={refetch} />
+            <UsersTable onUserDeleted={refetch} />
           </TabsContent>
 
           <TabsContent value="subscribers">
