@@ -17,6 +17,7 @@ import Hotels from "./pages/Hotels";
 import Bookings from "./pages/Bookings";
 import Alerts from "./pages/Alerts";
 import SavedSearches from "./pages/SavedSearches";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/saved-searches" element={<SavedSearches />} />
+            <Route path="/contact" element={<Contact />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
