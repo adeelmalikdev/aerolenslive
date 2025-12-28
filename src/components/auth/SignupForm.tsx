@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CountryCodeSelect } from '@/components/ui/country-code-select';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { OtpVerification } from './OtpVerification';
 
 interface SignupFormProps {
@@ -17,6 +22,9 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
+  const [countryCode, setCountryCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,6 +44,9 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
+            date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+            phone_number: phoneNumber || null,
+            country_code: countryCode || null,
           },
         },
       });
@@ -168,6 +179,7 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
           autoComplete="name"
         />
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="signup-email">Email</Label>
         <Input
@@ -180,6 +192,7 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
           autoComplete="email"
         />
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="signup-password">Password</Label>
         <Input
@@ -193,6 +206,57 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
           autoComplete="new-password"
         />
       </div>
+
+      <div className="space-y-2">
+        <Label>Date of Birth</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full justify-start text-left font-normal',
+                !dateOfBirth && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateOfBirth ? format(dateOfBirth, 'PPP') : <span>Select your date of birth</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-50" align="start">
+            <Calendar
+              mode="single"
+              selected={dateOfBirth}
+              onSelect={setDateOfBirth}
+              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+              initialFocus
+              className={cn('p-3 pointer-events-auto')}
+              captionLayout="dropdown-buttons"
+              fromYear={1920}
+              toYear={new Date().getFullYear()}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Phone Number (Optional)</Label>
+        <div className="flex gap-2">
+          <CountryCodeSelect
+            value={countryCode}
+            onValueChange={setCountryCode}
+            className="shrink-0"
+          />
+          <Input
+            type="tel"
+            placeholder="123 456 7890"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+            className="flex-1"
+            autoComplete="tel-national"
+          />
+        </div>
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-start space-x-2">
           <Checkbox
@@ -223,6 +287,7 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
           </Label>
         </div>
       </div>
+
       <Button type="submit" className="w-full" disabled={loading || !agreeToTerms}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" /> : null}
         Create Account

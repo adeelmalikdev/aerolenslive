@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plane, Trash2, ArrowRight, Save, Bell, Ticket } from 'lucide-react';
+import { format } from 'date-fns';
+import { User, Plane, Trash2, ArrowRight, Save, Bell, Ticket, Calendar, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CountryCodeSelect } from '@/components/ui/country-code-select';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useSavedSearches } from '@/hooks/useSavedSearches';
 import { useBookings, Booking } from '@/hooks/useBookings';
 import { PriceAlertsList } from '@/components/flight/PriceAlerts';
-import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -22,6 +26,9 @@ export default function Profile() {
   const { bookings, loading: bookingsLoading } = useBookings();
   
   const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
+  const [countryCode, setCountryCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -35,8 +42,11 @@ export default function Profile() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (profile?.full_name) {
-      setFullName(profile.full_name);
+    if (profile) {
+      setFullName(profile.full_name || '');
+      setDateOfBirth(profile.date_of_birth ? new Date(profile.date_of_birth) : undefined);
+      setCountryCode(profile.country_code || '');
+      setPhoneNumber(profile.phone_number || '');
     }
   }, [profile]);
 
@@ -44,7 +54,12 @@ export default function Profile() {
     setSaving(true);
     try {
       const cleanedName = fullName.trim();
-      await updateProfile({ full_name: cleanedName ? cleanedName : null });
+      await updateProfile({ 
+        full_name: cleanedName ? cleanedName : null,
+        date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+        phone_number: phoneNumber || null,
+        country_code: countryCode || null,
+      });
     } finally {
       setSaving(false);
     }
@@ -100,7 +115,8 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="grid gap-4 max-w-md">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Full Name */}
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
@@ -112,17 +128,74 @@ export default function Profile() {
                 />
               </div>
 
+              {/* Email (read-only) */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user?.email || ''} disabled aria-describedby="email-hint" />
                 <p id="email-hint" className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
 
-              <Button onClick={handleSaveProfile} disabled={saving || authLoading}>
-                <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                {saving ? 'Saving' : 'Save Changes'}
-              </Button>
+              {/* Date of Birth */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" aria-hidden="true" />
+                  Date of Birth
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !dateOfBirth && 'text-muted-foreground'
+                      )}
+                    >
+                      {dateOfBirth ? format(dateOfBirth, 'PPP') : <span>Select your date of birth</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateOfBirth}
+                      onSelect={setDateOfBirth}
+                      disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                      captionLayout="dropdown-buttons"
+                      fromYear={1920}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Phone Number */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" aria-hidden="true" />
+                  Phone Number
+                </Label>
+                <div className="flex gap-2">
+                  <CountryCodeSelect
+                    value={countryCode}
+                    onValueChange={setCountryCode}
+                    className="shrink-0"
+                  />
+                  <Input
+                    type="tel"
+                    placeholder="123 456 7890"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
             </div>
+
+            <Button onClick={handleSaveProfile} disabled={saving || authLoading}>
+              <Save className="h-4 w-4 mr-2" aria-hidden="true" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </CardContent>
         </Card>
 
