@@ -77,11 +77,6 @@ const Index = () => {
     window.location.href = newUrl;
   };
 
-  const handleSelectDestination = (code: string) => {
-    const newUrl = `/?destination=${encodeURIComponent(code)}`;
-    window.history.pushState({}, '', newUrl);
-    window.location.href = newUrl;
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,7 +127,7 @@ const Index = () => {
         </div>
       ) : (
         <>
-          <FeaturedDestinations onSelectDestination={handleSelectDestination} />
+          <FeaturedDestinations />
           <ServicesSection />
           <TestimonialsSection />
           <NewsletterSection />
