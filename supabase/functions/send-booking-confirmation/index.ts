@@ -233,11 +233,10 @@ function generateBoardingPassPDF(data: {
   doc.setFillColor(37, 99, 235);
   doc.rect(155, 0, 55, 100, "F");
 
-  doc.setFillColor(255, 255, 255);
-  doc.setGlobalAlpha(0.1);
+  // Decorative circles with light opacity (using lighter color instead of alpha)
+  doc.setFillColor(100, 160, 246); // Lighter blue for subtle effect
   doc.circle(20, 80, 40, "F");
   doc.circle(140, 20, 30, "F");
-  doc.setGlobalAlpha(1);
 
   doc.setDrawColor(255, 255, 255);
   doc.setLineDashPattern([2, 2], 0);
