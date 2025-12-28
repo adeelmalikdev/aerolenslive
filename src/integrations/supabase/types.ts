@@ -107,6 +107,33 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_verifications: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       price_alerts: {
         Row: {
           created_at: string | null
@@ -235,6 +262,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_otps: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
