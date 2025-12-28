@@ -41,6 +41,15 @@ export function SignupForm() {
       } else {
         toast.success('Account created! Welcome to AeroLens!');
 
+        // Send welcome email via Resend
+        try {
+          await supabase.functions.invoke('send-signup-welcome', {
+            body: { email, fullName },
+          });
+        } catch {
+          // Don't fail signup if welcome email fails
+        }
+
         // Subscribe to newsletter if opted in
         if (subscribeNewsletter) {
           try {

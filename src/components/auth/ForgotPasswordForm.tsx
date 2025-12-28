@@ -20,12 +20,16 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      // Use custom Resend email for password reset
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: {
+          email,
+          redirectUrl: `${window.location.origin}/auth?mode=reset`,
+        },
       });
 
-      if (error) {
-        toast.error(error.message);
+      if (error || !data?.success) {
+        toast.error(data?.error || 'Failed to send reset email');
       } else {
         setSent(true);
         toast.success('Password reset email sent! Check your inbox.');
