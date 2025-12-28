@@ -50,16 +50,16 @@ interface FeaturedDestinationsProps {
 
 export function FeaturedDestinations({ onSelectDestination }: FeaturedDestinationsProps) {
   return (
-    <section className="py-16 lg:py-24 bg-secondary/30">
+    <section className="py-10 sm:py-16 lg:py-24 bg-secondary/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">
           Featured Destinations
         </h2>
-        <p className="text-muted-foreground mb-10">
+        <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-10">
           Explore our most popular flight routes
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {destinations.map((dest) => (
             <Card 
               key={dest.id} 

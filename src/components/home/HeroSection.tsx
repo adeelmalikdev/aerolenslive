@@ -25,7 +25,7 @@ export function HeroSection({
   const [activeTab, setActiveTab] = useState('book');
 
   return (
-    <section className="relative min-h-[600px] lg:min-h-[700px]">
+    <section className="relative min-h-[500px] sm:min-h-[600px] lg:min-h-[700px]">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
@@ -40,32 +40,32 @@ export function HeroSection({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 pt-20 lg:pt-32">
+      <div className="relative z-10 container mx-auto px-4 pt-8 sm:pt-16 lg:pt-32">
         <div className="max-w-2xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-3 sm:mb-6">
             Take Off With<br />
             <span className="text-primary">Confidence</span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-10 max-w-lg">
+          <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-10 max-w-lg">
             Compare millions of flights to find the best deals. Search, compare, and book your perfect journey with ease.
           </p>
         </div>
 
         {/* Search Card */}
-        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 max-w-5xl">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="bg-muted/50 h-12 p-1">
-              <TabsTrigger value="book" className="px-8 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 max-w-5xl">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+            <TabsList className="bg-muted/50 h-auto p-1 flex flex-wrap w-full">
+              <TabsTrigger value="book" className="flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-3 sm:px-8 h-9 sm:h-10 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 Book
               </TabsTrigger>
-              <TabsTrigger value="my-trip" className="px-8 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TabsTrigger value="my-trip" className="flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-3 sm:px-8 h-9 sm:h-10 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 My Trip
               </TabsTrigger>
-              <TabsTrigger value="check-in" className="px-8 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TabsTrigger value="check-in" className="flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-3 sm:px-8 h-9 sm:h-10 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 Check In
               </TabsTrigger>
-              <TabsTrigger value="flight-status" className="px-8 h-10 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Flight Status
+              <TabsTrigger value="flight-status" className="flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-3 sm:px-8 h-9 sm:h-10 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Status
               </TabsTrigger>
             </TabsList>
           </Tabs>

@@ -7,13 +7,13 @@ export function ServicesSection() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-16 lg:py-24 bg-background">
+    <section className="py-10 sm:py-16 lg:py-24 bg-background">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">
             More Than Just Flights
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Complete your travel experience with our hotel booking service
           </p>
         </div>

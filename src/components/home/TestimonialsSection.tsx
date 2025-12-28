@@ -38,20 +38,20 @@ export function TestimonialsSection() {
   const current = testimonials[currentIndex];
 
   return (
-    <section className="py-16 lg:py-24 bg-secondary/30">
+    <section className="py-10 sm:py-16 lg:py-24 bg-secondary/30">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-2 text-center">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2 text-center">
             What Our Travelers Say
           </h2>
-          <p className="text-muted-foreground text-center mb-12">
+          <p className="text-sm sm:text-base text-muted-foreground text-center mb-6 sm:mb-12">
             Join thousands of satisfied travelers
           </p>
 
           <Card className="relative">
-            <CardContent className="p-8 lg:p-12">
-              <Quote className="h-10 w-10 text-primary/20 mb-4" />
-              <p className="text-lg lg:text-xl text-foreground mb-6 italic">
+            <CardContent className="p-5 sm:p-8 lg:p-12">
+              <Quote className="h-8 w-8 sm:h-10 sm:w-10 text-primary/20 mb-3 sm:mb-4" />
+              <p className="text-base sm:text-lg lg:text-xl text-foreground mb-4 sm:mb-6 italic">
                 "{current.content}"
               </p>
               <div className="flex items-center justify-between">
