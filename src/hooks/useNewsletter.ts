@@ -35,9 +35,19 @@ export function useNewsletter() {
         throw error;
       }
 
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-newsletter-welcome', {
+          body: { email: validation.data }
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the subscription if email fails
+      }
+
       toast({
         title: 'Successfully Subscribed!',
-        description: 'Thank you for subscribing to our newsletter.',
+        description: 'Thank you for subscribing to our newsletter. Check your email for a welcome message!',
       });
       return true;
     } catch {
