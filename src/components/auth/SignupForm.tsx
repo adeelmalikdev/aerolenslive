@@ -7,20 +7,28 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { OtpVerification } from './OtpVerification';
 
-export function SignupForm() {
+interface SignupFormProps {
+  onVerificationComplete?: () => void;
+}
+
+export function SignupForm({ onVerificationComplete }: SignupFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [pendingCredentials, setPendingCredentials] = useState<{email: string; password: string} | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // First, create the user account (but they won't be able to login until verified)
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -38,25 +46,31 @@ export function SignupForm() {
         } else {
           toast.error(error.message);
         }
-      } else {
-        toast.success('Account created! Welcome to AeroLens!');
+        return;
+      }
 
-        // Send welcome email via Resend
+      // Send OTP email for verification
+      const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
+        body: { email, fullName },
+      });
+
+      if (otpError) {
+        console.error('OTP email error:', otpError);
+        toast.error('Failed to send verification code. Please try again.');
+        return;
+      }
+
+      // Store credentials for auto-login after verification
+      setPendingCredentials({ email, password });
+      setShowOtpVerification(true);
+      toast.success('Verification code sent to your email!');
+
+      // Subscribe to newsletter if opted in
+      if (subscribeNewsletter) {
         try {
-          await supabase.functions.invoke('send-signup-welcome', {
-            body: { email, fullName },
-          });
+          await supabase.from('newsletter_subscribers').insert({ email });
         } catch {
-          // Don't fail signup if welcome email fails
-        }
-
-        // Subscribe to newsletter if opted in
-        if (subscribeNewsletter) {
-          try {
-            await supabase.from('newsletter_subscribers').insert({ email });
-          } catch {
-            // Ignore errors - user is already signed up
-          }
+          // Ignore errors - user is already signed up
         }
       }
     } catch {
@@ -65,6 +79,80 @@ export function SignupForm() {
       setLoading(false);
     }
   };
+
+  const handleVerifyOtp = async (otp: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { email, otp },
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || 'Invalid verification code');
+        return;
+      }
+
+      toast.success('Email verified successfully!');
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-signup-welcome', {
+          body: { email, fullName },
+        });
+      } catch {
+        // Don't fail if welcome email fails
+      }
+
+      // Auto-login the user
+      if (pendingCredentials) {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: pendingCredentials.email,
+          password: pendingCredentials.password,
+        });
+
+        if (loginError) {
+          toast.info('Please sign in with your credentials.');
+        }
+      }
+
+      onVerificationComplete?.();
+    } catch {
+      toast.error('Failed to verify code. Please try again.');
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('send-otp-email', {
+        body: { email, fullName },
+      });
+
+      if (error) {
+        toast.error('Failed to resend code. Please try again.');
+        return;
+      }
+
+      toast.success('New verification code sent!');
+    } catch {
+      toast.error('Failed to resend code. Please try again.');
+    }
+  };
+
+  const handleBackToSignup = () => {
+    setShowOtpVerification(false);
+    setPendingCredentials(null);
+  };
+
+  if (showOtpVerification) {
+    return (
+      <OtpVerification
+        email={email}
+        onVerify={handleVerifyOtp}
+        onResend={handleResendOtp}
+        onBack={handleBackToSignup}
+        isLoading={loading}
+      />
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
