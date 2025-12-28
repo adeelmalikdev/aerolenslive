@@ -5,7 +5,6 @@ import { FeaturedDestinations } from '@/components/home/FeaturedDestinations';
 import { ServicesSection } from '@/components/home/ServicesSection';
 import { TestimonialsSection } from '@/components/home/TestimonialsSection';
 import { NewsletterSection } from '@/components/home/NewsletterSection';
-import { ContactSection } from '@/components/home/ContactSection';
 import { Footer } from '@/components/home/Footer';
 import { FlightResults } from '@/components/flight/FlightResults';
 import { SavedSearches } from '@/components/flight/SavedSearches';
@@ -137,7 +136,6 @@ const Index = () => {
           <ServicesSection />
           <TestimonialsSection />
           <NewsletterSection />
-          <ContactSection />
           <Footer />
         </>
       )}

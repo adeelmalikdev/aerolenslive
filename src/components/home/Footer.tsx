@@ -9,6 +9,7 @@ const footerLinks = {
   ],
   customerService: [
     { label: 'Help Center', href: '/help' },
+    { label: 'Contact Us', href: '/contact' },
   ],
 };
 
