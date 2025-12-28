@@ -46,23 +46,41 @@ export function useProfile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const updateProfile = async (updates: { full_name?: string; avatar_url?: string }) => {
-    if (!user || !profile) return false;
+  const updateProfile = async (updates: { full_name?: string | null; avatar_url?: string | null }) => {
+    if (!user) return false;
 
     try {
-      const { error } = await supabase
+      // Ensure we have (at most) one profile row for this user
+      const { data: existing, error: existingError } = await supabase
         .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingError) throw existingError;
+
+      if (existing) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('profiles').insert({
+          user_id: user.id,
+          ...updates,
+        });
+
+        if (error) throw error;
+      }
 
       toast({
-        title: 'Profile updated',
-        description: 'Your profile has been updated successfully.',
+        title: 'Changes saved',
+        description: 'Your profile details have been saved.',
       });
 
       await fetchProfile();
@@ -71,7 +89,7 @@ export function useProfile() {
       console.error('Error updating profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: 'Failed to save changes. Please try again.',
         variant: 'destructive',
       });
       return false;
