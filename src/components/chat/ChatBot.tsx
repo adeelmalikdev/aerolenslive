@@ -56,7 +56,7 @@ export function ChatBot() {
               ✈️
             </div>
             <div>
-              <h3 className="font-semibold">SkyWay Assistant</h3>
+              <h3 className="font-semibold">AeroLens Assistant</h3>
               <p className="text-xs opacity-80">Always here to help</p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export function ChatBot() {
         <ScrollArea className="h-[350px] p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <p className="mb-2">👋 Hello! I'm your SkyWay assistant.</p>
+              <p className="mb-2">👋 Hello! I'm your AeroLens assistant.</p>
               <p className="text-sm">Ask me about flights, destinations, or travel tips!</p>
             </div>
           ) : (
