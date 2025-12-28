@@ -52,7 +52,7 @@ export function HeroSection({
         </div>
 
         {/* Search Card */}
-        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 max-w-5xl">
+        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 max-w-5xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
             <TabsList className="bg-muted/50 h-auto p-1 flex flex-wrap w-full">
               <TabsTrigger value="book" className="flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-3 sm:px-8 h-9 sm:h-10 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">

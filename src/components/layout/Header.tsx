@@ -3,6 +3,7 @@ import { Plane, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { UserDrawer } from './UserDrawer';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const { user, loading } = useAuth();
@@ -15,20 +16,23 @@ export function Header() {
           <span className="text-xl font-bold text-foreground">AeroLens</span>
         </Link>
 
-        {!loading && (
-          <>
-            {user ? (
-              <UserDrawer />
-            ) : (
-              <Button asChild>
-                <Link to="/auth">
-                  <User className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Sign In
-                </Link>
-              </Button>
-            )}
-          </>
-        )}
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          {!loading && (
+            <>
+              {user ? (
+                <UserDrawer />
+              ) : (
+                <Button asChild>
+                  <Link to="/auth">
+                    <User className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Sign In
+                  </Link>
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </nav>
     </header>
   );
