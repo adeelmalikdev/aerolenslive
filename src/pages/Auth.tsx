@@ -21,15 +21,32 @@ const Auth = () => {
   }, []);
 
   useEffect(() => {
+    const checkAdminAndRedirect = async (userId: string) => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      if (data) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate('/');
+        setTimeout(() => {
+          checkAdminAndRedirect(session.user.id);
+        }, 0);
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/');
+        checkAdminAndRedirect(session.user.id);
       }
     });
 
