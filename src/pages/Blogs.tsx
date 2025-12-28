@@ -1,22 +1,29 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
+import { cityBlogs } from '@/data/cityBlogs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cityBlogs } from '@/data/cityBlogs';
+import { Footer } from '@/components/home/Footer';
 
-export function FeaturedDestinations() {
+export default function Blogs() {
   return (
-    <section className="py-10 sm:py-16 lg:py-24 bg-secondary/30">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">
-          Travel Guides
-        </h2>
-        <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-10">
-          Discover inspiring travel stories and tips for your next adventure
-        </p>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="bg-secondary/30 py-16 sm:py-24">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+            Travel Guides
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Discover inspiring travel stories, local tips, and everything you need to plan your next adventure.
+          </p>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {cityBlogs.slice(0, 8).map((blog) => (
+      {/* Blog Grid */}
+      <div className="container mx-auto px-4 py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {cityBlogs.map((blog) => (
             <Link key={blog.id} to={`/blogs/${blog.slug}`}>
               <Card className="group overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 h-full">
                 <div className="relative h-48 overflow-hidden">
@@ -26,7 +33,6 @@ export function FeaturedDestinations() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     loading="lazy"
                     decoding="async"
-                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                   <div className="absolute bottom-3 left-3 flex gap-1">
@@ -38,11 +44,13 @@ export function FeaturedDestinations() {
                   </div>
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg text-primary">
+                  <h3 className="font-semibold text-lg text-primary mb-1">
                     {blog.city}, {blog.country}
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{blog.excerpt}</p>
-                  <div className="flex items-center justify-between mt-3">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                    {blog.excerpt}
+                  </p>
+                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {blog.readTime}
@@ -57,17 +65,9 @@ export function FeaturedDestinations() {
             </Link>
           ))}
         </div>
-
-        <div className="text-center mt-8">
-          <Link
-            to="/blogs"
-            className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
-          >
-            View all travel guides
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
       </div>
-    </section>
+
+      <Footer />
+    </div>
   );
 }
