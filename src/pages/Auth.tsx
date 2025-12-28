@@ -3,11 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plane } from 'lucide-react';
+import { Plane, Loader2 } from 'lucide-react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
+import { toast } from 'sonner';
 
 type AuthView = 'auth' | 'forgot' | 'reset';
 
@@ -15,17 +16,66 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [view, setView] = useState<AuthView>('auth');
+  const [isProcessingToken, setIsProcessingToken] = useState(false);
 
   useEffect(() => {
     document.title = 'Sign In | AeroLens';
   }, []);
 
+  // Handle password reset token from URL hash
   useEffect(() => {
-    // Check if this is a password reset flow
-    const mode = searchParams.get('mode');
-    if (mode === 'reset') {
-      setView('reset');
-    }
+    const handlePasswordResetToken = async () => {
+      // Check for hash fragment containing access_token (Supabase password reset flow)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+
+      if (type === 'recovery' && accessToken && refreshToken) {
+        setIsProcessingToken(true);
+        try {
+          // Exchange the tokens to establish a session
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            console.error('Error setting session from recovery token:', error);
+            toast.error('Invalid or expired reset link. Please request a new one.');
+            setView('forgot');
+          } else {
+            // Session established, show reset form
+            setView('reset');
+            // Clear the hash from URL for cleaner look
+            window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+          }
+        } catch (err) {
+          console.error('Error processing recovery token:', err);
+          toast.error('Failed to process reset link. Please try again.');
+          setView('forgot');
+        } finally {
+          setIsProcessingToken(false);
+        }
+      } else {
+        // Check for mode=reset in query params (after token processed)
+        const mode = searchParams.get('mode');
+        if (mode === 'reset') {
+          // Verify there's actually a session for password reset
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+              setView('reset');
+            } else {
+              toast.error('Session expired. Please request a new password reset link.');
+              setView('forgot');
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          });
+        }
+      }
+    };
+
+    handlePasswordResetToken();
   }, [searchParams]);
 
   useEffect(() => {
@@ -46,7 +96,7 @@ const Auth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Don't redirect during password reset
-      if (view === 'reset') return;
+      if (view === 'reset' || isProcessingToken) return;
       
       if (session) {
         setTimeout(() => {
@@ -57,7 +107,7 @@ const Auth = () => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       // Don't redirect during password reset
-      if (view === 'reset') return;
+      if (view === 'reset' || isProcessingToken) return;
       
       if (session) {
         checkAdminAndRedirect(session.user.id);
@@ -65,9 +115,18 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, view]);
+  }, [navigate, view, isProcessingToken]);
 
   const renderContent = () => {
+    if (isProcessingToken) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Processing reset link...</p>
+        </div>
+      );
+    }
+
     if (view === 'reset') {
       return <ResetPasswordForm />;
     }
