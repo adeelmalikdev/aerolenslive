@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.send-bulk-newsletter]
 verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.send-signup-welcome]
+verify_jwt = false
