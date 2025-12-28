@@ -11,6 +11,7 @@ import { FlightOffer, FlightItinerary } from '@/types/flight';
 import { useBookings } from '@/hooks/useBookings';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { BookingSuccessModal } from './BookingSuccessModal';
 
 interface FlightDetailsModalProps {
   flight: FlightOffer | null;
@@ -154,6 +155,18 @@ export function FlightDetailsModal({
 }: FlightDetailsModalProps) {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [lastName, setLastName] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bookingData, setBookingData] = useState<{
+    bookingReference: string;
+    flightNumber: string;
+    airline: string;
+    origin: string;
+    destination: string;
+    departureTime: string;
+    arrivalTime: string;
+    cabinClass: string;
+    passengerName: string;
+  } | null>(null);
   const { createBooking, loading: bookingLoading } = useBookings();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -177,17 +190,21 @@ export function FlightDetailsModal({
 
     const lastSegment = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1];
     const cabin = travelerPricing?.fareDetailsBySegment?.[0]?.cabin || 'ECONOMY';
+    const flightNum = `${firstSegment.carrierCode}${firstSegment.number}`;
+    const flightOrigin = originCode || firstSegment.departure.iataCode;
+    const flightDest = destinationCode || lastSegment.arrival.iataCode;
+    const cabinClass = cabin.toLowerCase().replace('_', ' ');
 
     const flightData = {
       airline: carrierName,
-      flightNumber: `${firstSegment.carrierCode}${firstSegment.number}`,
-      origin: originCode || firstSegment.departure.iataCode,
-      destination: destinationCode || lastSegment.arrival.iataCode,
+      flightNumber: flightNum,
+      origin: flightOrigin,
+      destination: flightDest,
       departureTime: firstSegment.departure.at,
       arrivalTime: lastSegment.arrival.at,
       duration: parseDuration(flight.itineraries[0].duration),
       price: parseFloat(flight.price.grandTotal),
-      cabinClass: cabin.toLowerCase().replace('_', ' '),
+      cabinClass,
     };
 
     const booking = await createBooking(
@@ -197,27 +214,40 @@ export function FlightDetailsModal({
       user.user_metadata?.full_name || lastName
     );
     if (booking) {
+      setBookingData({
+        bookingReference: booking.booking_reference,
+        flightNumber: flightNum,
+        airline: carrierName,
+        origin: flightOrigin,
+        destination: flightDest,
+        departureTime: firstSegment.departure.at,
+        arrivalTime: lastSegment.arrival.at,
+        cabinClass,
+        passengerName: lastName,
+      });
       setShowBookingForm(false);
       setLastName('');
       onOpenChange(false);
+      setShowSuccessModal(true);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Flight Details</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Flight Details</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Outbound */}
-          <ItineraryDetails
-            itinerary={flight.itineraries[0]}
-            dictionaries={dictionaries}
-            fareDetailsBySegment={travelerPricing?.fareDetailsBySegment}
-            label="Outbound Flight"
-          />
+          <div className="space-y-6">
+            {/* Outbound */}
+            <ItineraryDetails
+              itinerary={flight.itineraries[0]}
+              dictionaries={dictionaries}
+              fareDetailsBySegment={travelerPricing?.fareDetailsBySegment}
+              label="Outbound Flight"
+            />
 
           {/* Return */}
           {isRoundTrip && (
@@ -308,5 +338,14 @@ export function FlightDetailsModal({
         </div>
       </DialogContent>
     </Dialog>
+    
+    {bookingData && (
+      <BookingSuccessModal
+        open={showSuccessModal}
+        onOpenChange={setShowSuccessModal}
+        {...bookingData}
+      />
+    )}
+  </>
   );
 }
