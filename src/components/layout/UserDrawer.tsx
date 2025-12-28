@@ -8,7 +8,8 @@ import {
   Settings, 
   LogOut, 
   ChevronRight,
-  Heart
+  Heart,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,12 +26,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBookings } from '@/hooks/useBookings';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { useSavedSearches } from '@/hooks/useSavedSearches';
+import { useAdmin } from '@/hooks/useAdmin';
 
 export function UserDrawer() {
   const { user, signOut } = useAuth();
   const { bookings } = useBookings();
   const { alerts } = usePriceAlerts();
   const { savedSearches } = useSavedSearches();
+  const { isAdmin } = useAdmin();
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -173,6 +176,20 @@ export function UserDrawer() {
           </Link>
 
           <Separator className="my-4" />
+
+          {isAdmin && (
+            <Link 
+              to="/admin" 
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-amber-500" />
+                <span className="font-medium">Admin Dashboard</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          )}
 
           <Link 
             to="/profile" 
