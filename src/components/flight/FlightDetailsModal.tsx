@@ -175,17 +175,27 @@ export function FlightDetailsModal({
 
     if (!lastName.trim()) return;
 
+    const lastSegment = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1];
+    const cabin = travelerPricing?.fareDetailsBySegment?.[0]?.cabin || 'ECONOMY';
+
     const flightData = {
       airline: carrierName,
       flightNumber: `${firstSegment.carrierCode}${firstSegment.number}`,
       origin: originCode || firstSegment.departure.iataCode,
-      destination: destinationCode || flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1].arrival.iataCode,
+      destination: destinationCode || lastSegment.arrival.iataCode,
       departureTime: firstSegment.departure.at,
-      arrivalTime: flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1].arrival.at,
+      arrivalTime: lastSegment.arrival.at,
+      duration: parseDuration(flight.itineraries[0].duration),
       price: parseFloat(flight.price.grandTotal),
+      cabinClass: cabin.toLowerCase().replace('_', ' '),
     };
 
-    const booking = await createBooking(flightData, lastName);
+    const booking = await createBooking(
+      flightData, 
+      lastName, 
+      user.email, 
+      user.user_metadata?.full_name || lastName
+    );
     if (booking) {
       setShowBookingForm(false);
       setLastName('');

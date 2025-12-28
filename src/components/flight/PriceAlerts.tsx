@@ -54,7 +54,9 @@ export function PriceAlertButton({
       destinationCode,
       destinationName,
       price,
-      currentPrice
+      currentPrice,
+      user?.email,
+      user?.user_metadata?.full_name
     );
 
     if (success) setOpen(false);
