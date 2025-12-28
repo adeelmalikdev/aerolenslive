@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.verify-otp]
 verify_jwt = false
+
+[functions.send-checkin-confirmation]
+verify_jwt = false
+
+[functions.send-price-alert-set]
+verify_jwt = false

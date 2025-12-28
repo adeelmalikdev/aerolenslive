@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plane, Calendar, Clock, CheckCircle, XCircle, Ticket } from 'lucide-react';
+import { ArrowLeft, Plane, CheckCircle, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,14 @@ export default function Bookings() {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
+
+  const handleCheckIn = async (bookingId: string) => {
+    await checkIn(
+      bookingId,
+      user?.email || undefined,
+      user?.user_metadata?.full_name || undefined
+    );
+  };
 
   if (authLoading || loading) {
     return (
@@ -70,7 +78,7 @@ export default function Bookings() {
         ) : (
           <div className="space-y-4">
             {bookings.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} onCheckIn={checkIn} />
+              <BookingCard key={booking.id} booking={booking} onCheckIn={handleCheckIn} />
             ))}
           </div>
         )}
@@ -81,7 +89,7 @@ export default function Bookings() {
 
 interface BookingCardProps {
   booking: Booking;
-  onCheckIn: (id: string) => Promise<boolean>;
+  onCheckIn: (id: string) => Promise<void>;
 }
 
 function BookingCard({ booking, onCheckIn }: BookingCardProps) {

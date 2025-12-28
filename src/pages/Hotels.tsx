@@ -3,8 +3,11 @@ import { Footer } from '@/components/home/Footer';
 import { HotelSearchForm } from '@/components/hotel/HotelSearchForm';
 import { HotelResults } from '@/components/hotel/HotelResults';
 import { HotelDetailsModal } from '@/components/hotel/HotelDetailsModal';
+import { HotelStatusForm } from '@/components/hotel/HotelStatusForm';
 import { useHotelSearch } from '@/hooks/useHotelSearch';
 import { HotelOffer, HotelSearchParams } from '@/types/hotel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, ClipboardCheck } from 'lucide-react';
 
 export default function Hotels() {
   const { hotels, loading, error, searchHotels } = useHotelSearch();
@@ -34,7 +37,29 @@ export default function Hotels() {
                 Search and compare hotels from around the world
               </p>
             </div>
-            <HotelSearchForm onSearch={handleSearch} loading={loading} />
+            
+            <Tabs defaultValue="search" className="w-full">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+                <TabsTrigger value="search" className="gap-2">
+                  <Search className="h-4 w-4" />
+                  Book
+                </TabsTrigger>
+                <TabsTrigger value="status" className="gap-2">
+                  <ClipboardCheck className="h-4 w-4" />
+                  Status
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="search">
+                <HotelSearchForm onSearch={handleSearch} loading={loading} />
+              </TabsContent>
+              
+              <TabsContent value="status">
+                <div className="max-w-2xl mx-auto bg-card rounded-xl shadow-lg p-6">
+                  <HotelStatusForm />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </section>
 
