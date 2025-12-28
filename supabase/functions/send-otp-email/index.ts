@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with OTP
     const emailResponse = await resend.emails.send({
-      from: "AeroLens <onboarding@resend.dev>",
+      from: "AeroLens <noreply@aerolens.live>",
       to: [normalizedEmail],
       subject: "Verify your email - AeroLens",
       html: `
