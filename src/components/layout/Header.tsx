@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { UserDrawer } from './UserDrawer';
 import { ThemeToggle } from './ThemeToggle';
+import { BackButton } from './BackButton';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -28,7 +29,8 @@ export function Header() {
   return (
     <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50" role="banner">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between" aria-label="Main navigation">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <BackButton />
           <Link to="/" className="flex items-center gap-2" aria-label="AeroLens - Go to homepage">
             <Plane className="h-6 w-6 text-primary" aria-hidden="true" />
             <span className="text-xl font-bold text-foreground">AeroLens</span>
