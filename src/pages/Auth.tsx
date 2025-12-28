@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,18 @@ const Auth = () => {
   const [view, setView] = useState<AuthView>('auth');
   const [isProcessingToken, setIsProcessingToken] = useState(false);
 
+  // Use refs to track state for auth listener to avoid stale closures
+  const viewRef = useRef(view);
+  const isProcessingTokenRef = useRef(isProcessingToken);
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  useEffect(() => {
+    isProcessingTokenRef.current = isProcessingToken;
+  }, [isProcessingToken]);
+
   useEffect(() => {
     document.title = 'Sign In | AeroLens';
   }, []);
@@ -30,6 +42,21 @@ const Auth = () => {
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
+
+      // Also check for mode=reset in query params first
+      const mode = searchParams.get('mode');
+      if (mode === 'reset' && !accessToken) {
+        // Already processed, verify session exists
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setView('reset');
+        } else {
+          toast.error('Session expired. Please request a new password reset link.');
+          setView('forgot');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+        return;
+      }
 
       if (type === 'recovery' && accessToken && refreshToken) {
         setIsProcessingToken(true);
@@ -57,21 +84,6 @@ const Auth = () => {
         } finally {
           setIsProcessingToken(false);
         }
-      } else {
-        // Check for mode=reset in query params (after token processed)
-        const mode = searchParams.get('mode');
-        if (mode === 'reset') {
-          // Verify there's actually a session for password reset
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-              setView('reset');
-            } else {
-              toast.error('Session expired. Please request a new password reset link.');
-              setView('forgot');
-              window.history.replaceState(null, '', window.location.pathname);
-            }
-          });
-        }
       }
     };
 
@@ -95,27 +107,36 @@ const Auth = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Don't redirect during password reset
-      if (view === 'reset' || isProcessingToken) return;
+      // Don't redirect during password reset - use refs for current values
+      if (viewRef.current === 'reset' || isProcessingTokenRef.current) return;
+      
+      // Also check URL for reset mode
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      if (urlParams.get('mode') === 'reset' || hashParams.get('type') === 'recovery') return;
       
       if (session) {
         setTimeout(() => {
+          // Double-check before redirecting
+          if (viewRef.current === 'reset' || isProcessingTokenRef.current) return;
           checkAdminAndRedirect(session.user.id);
         }, 0);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // Don't redirect during password reset
-      if (view === 'reset' || isProcessingToken) return;
-      
-      if (session) {
-        checkAdminAndRedirect(session.user.id);
-      }
-    });
+    // Initial session check
+    const mode = searchParams.get('mode');
+    const hash = window.location.hash;
+    if (mode !== 'reset' && !hash.includes('type=recovery')) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && viewRef.current !== 'reset' && !isProcessingTokenRef.current) {
+          checkAdminAndRedirect(session.user.id);
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
-  }, [navigate, view, isProcessingToken]);
+  }, [navigate, searchParams]);
 
   const renderContent = () => {
     if (isProcessingToken) {
