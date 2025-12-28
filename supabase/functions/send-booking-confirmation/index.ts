@@ -52,18 +52,32 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending booking confirmation to ${to} for reference ${bookingReference}`);
 
     const segmentsHtml = segments.map((segment, index) => `
-      <div style="background: white; border-radius: 10px; padding: 20px; margin: 15px 0; border-left: 4px solid #667eea;">
-        <div style="font-size: 12px; color: #6b7280;">Flight ${index + 1}</div>
-        <div style="font-size: 18px; font-weight: bold; color: #374151;">
-          ${segment.airline} ${segment.flightNumber}
+      <div style="background: white; border-radius: 12px; padding: 24px; margin: 15px 0; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">Flight ${index + 1}</div>
+          <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: bold; letter-spacing: 2px;">
+            ✈️ ${segment.flightNumber}
+          </div>
         </div>
-        <div style="font-size: 12px; color: #6b7280;">Duration: ${segment.duration}</div>
-        <div style="margin-top: 15px;">
-          <span style="font-size: 24px; font-weight: bold;">${segment.departure}</span>
-          <span style="color: #667eea;"> ✈️ → </span>
-          <span style="font-size: 24px; font-weight: bold;">${segment.arrival}</span>
+        <div style="font-size: 14px; color: #374151; margin-bottom: 12px;">
+          ${segment.airline}
         </div>
-        <div style="color: #6b7280;">${segment.departureTime} - ${segment.arrivalTime}</div>
+        <div style="display: flex; align-items: center; gap: 20px; margin: 20px 0;">
+          <div style="text-align: center;">
+            <div style="font-size: 36px; font-weight: bold; color: #1e293b;">${segment.departure}</div>
+            <div style="font-size: 12px; color: #64748b;">${segment.departureTime}</div>
+          </div>
+          <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div style="height: 2px; flex: 1; background: linear-gradient(90deg, #3b82f6, #93c5fd, #3b82f6);"></div>
+            <div style="margin: 0 10px; font-size: 20px;">✈️</div>
+            <div style="height: 2px; flex: 1; background: linear-gradient(90deg, #3b82f6, #93c5fd, #3b82f6);"></div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 36px; font-weight: bold; color: #1e293b;">${segment.arrival}</div>
+            <div style="font-size: 12px; color: #64748b;">${segment.arrivalTime}</div>
+          </div>
+        </div>
+        <div style="text-align: center; color: #6b7280; font-size: 13px;">Duration: ${segment.duration}</div>
       </div>
     `).join("");
 
