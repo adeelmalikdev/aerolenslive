@@ -42,8 +42,12 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    await updateProfile({ full_name: fullName || null });
-    setSaving(false);
+    try {
+      const cleanedName = fullName.trim();
+      await updateProfile({ full_name: cleanedName ? cleanedName : null });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getInitials = () => {
@@ -114,9 +118,9 @@ export default function Profile() {
                 <p id="email-hint" className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
 
-              <Button onClick={handleSaveProfile} disabled={saving}>
+              <Button onClick={handleSaveProfile} disabled={saving || authLoading}>
                 <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? 'Saving' : 'Save Changes'}
               </Button>
             </div>
           </CardContent>
