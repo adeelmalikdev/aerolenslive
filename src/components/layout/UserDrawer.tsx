@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useBookings } from '@/hooks/useBookings';
+import { useHotelBookings } from '@/hooks/useHotelBookings';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { useSavedSearches } from '@/hooks/useSavedSearches';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -31,6 +32,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 export function UserDrawer() {
   const { user, signOut } = useAuth();
   const { bookings } = useBookings();
+  const { bookings: hotelBookings } = useHotelBookings();
   const { alerts } = usePriceAlerts();
   const { savedSearches } = useSavedSearches();
   const { isAdmin } = useAdmin();
@@ -59,7 +61,9 @@ export function UserDrawer() {
   };
 
   const activeAlerts = alerts.filter(a => a.is_active);
-  const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
+  const confirmedFlightBookings = bookings.filter(b => b.status === 'confirmed');
+  const confirmedHotelBookings = hotelBookings.filter(b => b.status === 'confirmed');
+  const totalBookings = confirmedFlightBookings.length + confirmedHotelBookings.length;
   const priceDroppedAlerts = alerts.filter(a => a.current_price && a.current_price <= a.target_price);
 
   return (
@@ -71,9 +75,9 @@ export function UserDrawer() {
               {getInitials()}
             </AvatarFallback>
           </Avatar>
-          {(activeAlerts.length > 0 || confirmedBookings.length > 0) && (
+          {(activeAlerts.length > 0 || totalBookings > 0) && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-              {activeAlerts.length + confirmedBookings.length}
+              {activeAlerts.length + totalBookings}
             </span>
           )}
         </Button>
@@ -129,8 +133,8 @@ export function UserDrawer() {
               <span className="font-medium">My Bookings</span>
             </div>
             <div className="flex items-center gap-2">
-              {confirmedBookings.length > 0 && (
-                <Badge variant="secondary">{confirmedBookings.length}</Badge>
+              {totalBookings > 0 && (
+                <Badge variant="secondary">{totalBookings}</Badge>
               )}
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
