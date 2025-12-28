@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Building2, Clock, CheckCircle, AlertTriangle, BedDouble } from 'lucide-react';
+import { Building2, Clock, CheckCircle, AlertTriangle, BedDouble } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface HotelReservation {
   confirmationNumber: string;
@@ -20,40 +20,6 @@ interface HotelReservation {
   specialRequests?: string;
 }
 
-// Mock hotel reservation data for demo
-const mockReservations: Record<string, HotelReservation> = {
-  'HTL123456': {
-    confirmationNumber: 'HTL123456',
-    hotelName: 'Grand Hyatt New York',
-    guestName: 'John Smith',
-    checkIn: '2025-01-20',
-    checkOut: '2025-01-24',
-    roomType: 'Deluxe King Room',
-    status: 'confirmed',
-    specialRequests: 'High floor, late checkout',
-  },
-  'RES789012': {
-    confirmationNumber: 'RES789012',
-    hotelName: 'The Ritz-Carlton Tokyo',
-    guestName: 'Sarah Johnson',
-    checkIn: '2025-01-15',
-    checkOut: '2025-01-18',
-    roomType: 'Club Suite',
-    status: 'checked_in',
-    roomNumber: '4502',
-  },
-  'BKG345678': {
-    confirmationNumber: 'BKG345678',
-    hotelName: 'Four Seasons Paris',
-    guestName: 'Michael Brown',
-    checkIn: '2025-01-10',
-    checkOut: '2025-01-12',
-    roomType: 'Superior Room',
-    status: 'checked_out',
-    roomNumber: '812',
-  },
-};
-
 export function HotelStatusForm() {
   const [confirmationNumber, setConfirmationNumber] = useState('');
   const [lastName, setLastName] = useState('');
@@ -66,15 +32,54 @@ export function HotelStatusForm() {
     if (!confirmationNumber.trim()) return;
 
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    setReservation(null);
     
-    const normalizedCode = confirmationNumber.toUpperCase().replace(/\s/g, '');
-    const res = mockReservations[normalizedCode] || null;
-    
-    setReservation(res);
-    setSearched(true);
-    setLoading(false);
+    try {
+      const normalizedCode = confirmationNumber.toUpperCase().replace(/\s/g, '');
+      
+      let query = supabase
+        .from('hotel_bookings')
+        .select('*')
+        .eq('booking_reference', normalizedCode);
+      
+      // If last name is provided, also filter by it
+      if (lastName.trim()) {
+        query = query.ilike('guest_last_name', lastName.trim());
+      }
+      
+      const { data, error } = await query.maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching reservation:', error);
+        toast.error('Failed to fetch reservation. Please try again.');
+        setSearched(true);
+        setLoading(false);
+        return;
+      }
+      
+      if (data) {
+        const hotelData = data.hotel_data as any;
+        const reservation: HotelReservation = {
+          confirmationNumber: data.booking_reference,
+          hotelName: hotelData?.hotel?.name || hotelData?.hotelName || 'Hotel',
+          guestName: data.guest_last_name,
+          checkIn: data.check_in_date,
+          checkOut: data.check_out_date,
+          roomType: hotelData?.offer?.room?.typeEstimated?.category || hotelData?.roomType || 'Standard Room',
+          status: data.status as HotelReservation['status'],
+          roomNumber: hotelData?.roomNumber,
+          specialRequests: hotelData?.specialRequests,
+        };
+        setReservation(reservation);
+      }
+      
+      setSearched(true);
+    } catch (err) {
+      console.error('Error:', err);
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: HotelReservation['status']) => {
@@ -141,10 +146,6 @@ export function HotelStatusForm() {
           {loading ? 'Checking...' : 'Check Reservation Status'}
         </Button>
       </form>
-
-      <div className="text-sm text-muted-foreground">
-        <p>Try these demo reservations: HTL123456, RES789012, BKG345678</p>
-      </div>
 
       {searched && !reservation && (
         <div className="bg-muted/50 rounded-lg p-6 text-center">
