@@ -59,7 +59,12 @@ const Auth = () => {
       }
 
       if (type === 'recovery' && accessToken && refreshToken) {
+        // Set both state AND ref immediately before setSession
+        // This is critical because onAuthStateChange fires synchronously
         setIsProcessingToken(true);
+        isProcessingTokenRef.current = true;
+        viewRef.current = 'reset'; // Pre-set this too
+        
         try {
           // Exchange the tokens to establish a session
           const { error } = await supabase.auth.setSession({
@@ -71,6 +76,7 @@ const Auth = () => {
             console.error('Error setting session from recovery token:', error);
             toast.error('Invalid or expired reset link. Please request a new one.');
             setView('forgot');
+            viewRef.current = 'forgot';
           } else {
             // Session established, show reset form
             setView('reset');
@@ -81,8 +87,10 @@ const Auth = () => {
           console.error('Error processing recovery token:', err);
           toast.error('Failed to process reset link. Please try again.');
           setView('forgot');
+          viewRef.current = 'forgot';
         } finally {
           setIsProcessingToken(false);
+          isProcessingTokenRef.current = false;
         }
       }
     };
