@@ -14,8 +14,11 @@ interface ContactEmailRequest {
   message: string;
 }
 
-// Primary team email (must be the Resend account owner until domain is verified)
-const PRIMARY_TEAM_EMAIL = "muhammadadeeltariq762@gmail.com";
+// Team emails to receive contact form submissions
+const TEAM_EMAILS = [
+  "muhammadadeeltariq762@gmail.com",
+  "mumarh135@gmail.com"
+];
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -26,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { name, email, subject, message }: ContactEmailRequest = await req.json();
     console.log("Sending contact form email from:", email);
 
-    // Send email to primary team member
+    // Send email to all team members
     const teamEmailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -34,8 +37,8 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "SkyWay Contact <onboarding@resend.dev>",
-        to: [PRIMARY_TEAM_EMAIL],
+        from: "AeroLens Support <support@aerolens.live>",
+        to: TEAM_EMAILS,
         reply_to: email,
         subject: `[Contact Form] ${subject}`,
         html: `
@@ -50,7 +53,6 @@ const handler = async (req: Request): Promise<Response> => {
               .field { margin-bottom: 15px; }
               .label { font-weight: bold; color: #1e40af; }
               .message-box { background: white; padding: 15px; border-radius: 5px; border-left: 4px solid #1e40af; }
-              .note { margin-top: 20px; padding: 10px; background: #fef3c7; border-radius: 5px; font-size: 12px; }
             </style>
           </head>
           <body>
@@ -71,10 +73,6 @@ const handler = async (req: Request): Promise<Response> => {
                 <div class="field">
                   <span class="label">Message:</span>
                   <div class="message-box">${message.replace(/\n/g, '<br>')}</div>
-                </div>
-                <div class="note">
-                  <strong>Note:</strong> Please forward this to mumarh135@gmail.com. 
-                  To enable automatic emails to both team members, verify a domain at resend.com/domains.
                 </div>
               </div>
             </div>

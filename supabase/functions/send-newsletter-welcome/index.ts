@@ -11,9 +11,6 @@ interface NewsletterWelcomeRequest {
   email: string;
 }
 
-// Verified email that can receive test emails without domain verification
-const VERIFIED_EMAIL = "muhammadadeeltariq762@gmail.com";
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,17 +18,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { email }: NewsletterWelcomeRequest = await req.json();
-    console.log("Newsletter subscription for:", email);
-
-    // Without a verified domain, we can only send to the account owner's email
-    // Log the subscription and return success - the user is still subscribed in the database
-    if (email.toLowerCase() !== VERIFIED_EMAIL.toLowerCase()) {
-      console.log("Skipping welcome email - domain not verified. User is still subscribed.");
-      return new Response(
-        JSON.stringify({ success: true, emailSent: false, reason: "domain_not_verified" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    console.log("Sending newsletter welcome email to:", email);
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -40,9 +27,9 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "SkyWay <onboarding@resend.dev>",
+        from: "AeroLens <noreply@aerolens.live>",
         to: [email],
-        subject: "Welcome to SkyWay Newsletter! ✈️",
+        subject: "Welcome to AeroLens Newsletter! ✈️",
         html: `
           <!DOCTYPE html>
           <html>
@@ -58,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <h1>✈️ Welcome to SkyWay!</h1>
+                <h1>✈️ Welcome to AeroLens!</h1>
               </div>
               <div class="content">
                 <h2>Thank you for subscribing!</h2>
@@ -70,10 +57,11 @@ const handler = async (req: Request): Promise<Response> => {
                   <li>💰 Price drop alerts on your favorite routes</li>
                 </ul>
                 <p>Stay tuned for amazing deals coming your way!</p>
-                <p>Happy travels,<br>The SkyWay Team</p>
+                <p>Happy travels,<br>The AeroLens Team</p>
               </div>
               <div class="footer">
-                <p>You received this email because you subscribed to SkyWay newsletter.</p>
+                <p>You received this email because you subscribed to AeroLens newsletter.</p>
+                <p>© ${new Date().getFullYear()} AeroLens. All rights reserved.</p>
               </div>
             </div>
           </body>
@@ -86,8 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Resend API response:", data);
 
     if (!response.ok) {
-      // Don't throw - just log and return success since subscription was saved
-      console.error("Email send failed but subscription saved:", data.message);
+      console.error("Email send failed:", data.message);
       return new Response(
         JSON.stringify({ success: true, emailSent: false }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -99,8 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error in newsletter welcome:", error);
-    // Return success anyway - the subscription is saved in the database
+    console.error("Error sending newsletter welcome email:", error);
     return new Response(
       JSON.stringify({ success: true, emailSent: false }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

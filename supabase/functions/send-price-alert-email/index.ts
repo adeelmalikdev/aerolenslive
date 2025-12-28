@@ -50,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "SkyScanner <onboarding@resend.dev>",
+        from: "AeroLens <noreply@aerolens.live>",
         to: [to],
         subject: `🎉 Price Drop Alert: ${originCode} → ${destinationCode} now ${currency} ${currentPrice}!`,
         html: `
@@ -94,8 +94,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>Don't wait too long – flight prices can change quickly!</p>
               </div>
               <div class="footer">
-                <p>You're receiving this because you set up a price alert on SkyScanner.</p>
-                <p>© ${new Date().getFullYear()} SkyScanner. All rights reserved.</p>
+                <p>You're receiving this because you set up a price alert on AeroLens.</p>
+                <p>© ${new Date().getFullYear()} AeroLens. All rights reserved.</p>
               </div>
             </div>
           </body>

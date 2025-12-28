@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "SkyScanner <onboarding@resend.dev>",
+        from: "AeroLens Bookings <bookings@aerolens.live>",
         to: [to],
         subject: `✅ Booking Confirmed - ${bookingReference}`,
         html: `
@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               <div class="footer">
                 <p>Questions? Contact our support team anytime.</p>
-                <p>© ${new Date().getFullYear()} SkyScanner. All rights reserved.</p>
+                <p>© ${new Date().getFullYear()} AeroLens. All rights reserved.</p>
               </div>
             </div>
           </body>
