@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Loader2, Mail, ArrowLeft } from 'lucide-react';
@@ -23,6 +23,8 @@ export function OtpVerification({
   const [otp, setOtp] = useState('');
   const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS);
   const [isResending, setIsResending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const verifyingRef = useRef(false);
 
   // Countdown timer for resend cooldown
   useEffect(() => {
@@ -35,10 +37,33 @@ export function OtpVerification({
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const handleOtpComplete = async (value: string) => {
+  const handleVerify = async (value: string) => {
+    // Prevent double verification
+    if (verifyingRef.current || isLoading || isVerifying) return;
+    if (value.length !== 6) return;
+    
+    verifyingRef.current = true;
+    setIsVerifying(true);
+    
+    try {
+      await onVerify(value);
+    } finally {
+      verifyingRef.current = false;
+      setIsVerifying(false);
+    }
+  };
+
+  const handleOtpComplete = (value: string) => {
     setOtp(value);
     if (value.length === 6) {
-      await onVerify(value);
+      handleVerify(value);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length === 6) {
+      await handleVerify(otp);
     }
   };
 
@@ -52,13 +77,6 @@ export function OtpVerification({
       setOtp('');
     } finally {
       setIsResending(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length === 6) {
-      await onVerify(otp);
     }
   };
 
