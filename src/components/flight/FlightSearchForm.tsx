@@ -89,11 +89,11 @@ export function FlightSearchForm({
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4">
         {/* Row 1: Origin, Destination, Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {/* Origin & Destination */}
-          <div className="lg:col-span-5 flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <AirportInput
               value={origin}
               onChange={setOrigin}
@@ -105,7 +105,7 @@ export function FlightSearchForm({
               variant="ghost"
               size="icon"
               onClick={handleSwapAirports}
-              className="shrink-0"
+              className="shrink-0 self-center rotate-90 sm:rotate-0"
               aria-label="Swap origin and destination"
             >
               <ArrowRightLeft className="h-4 w-4" aria-hidden="true" />
@@ -120,18 +120,18 @@ export function FlightSearchForm({
           </div>
 
           {/* Dates */}
-          <div className="lg:col-span-4 flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "flex-1 h-12 justify-start text-left font-normal",
+                    "w-full h-11 sm:h-12 justify-start text-left font-normal text-xs sm:text-sm",
                     !departureDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {departureDate ? format(departureDate, "MMM d, yyyy") : "Departure"}
+                  <CalendarIcon className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{departureDate ? format(departureDate, "MMM d") : "Departure"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -145,18 +145,18 @@ export function FlightSearchForm({
               </PopoverContent>
             </Popover>
 
-            {tripType === 'round-trip' && (
+            {tripType === 'round-trip' ? (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 h-12 justify-start text-left font-normal",
+                      "w-full h-11 sm:h-12 justify-start text-left font-normal text-xs sm:text-sm",
                       !returnDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {returnDate ? format(returnDate, "MMM d, yyyy") : "Return"}
+                    <CalendarIcon className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">{returnDate ? format(returnDate, "MMM d") : "Return"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -169,15 +169,17 @@ export function FlightSearchForm({
                   />
                 </PopoverContent>
               </Popover>
+            ) : (
+              <div /> /* Empty placeholder for grid alignment */
             )}
           </div>
 
           {/* Passengers */}
-          <div className="lg:col-span-3">
+          <div className="w-full">
             <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full h-12 justify-start">
-                  <Users className="mr-2 h-4 w-4" />
+                <Button variant="outline" className="w-full h-11 sm:h-12 justify-start text-xs sm:text-sm">
+                  <Users className="mr-1 sm:mr-2 h-4 w-4 shrink-0" />
                   {totalPassengers} {totalPassengers === 1 ? 'Traveler' : 'Travelers'}
                 </Button>
               </PopoverTrigger>
@@ -291,10 +293,10 @@ export function FlightSearchForm({
           <Button
             onClick={handleSearch}
             disabled={!isValid || loading}
-            className="flex-1 h-12"
+            className="flex-1 h-11 sm:h-12 text-sm sm:text-base"
           >
             <Search className="h-4 w-4 mr-2" />
-            {loading ? 'Searching...' : 'Search'}
+            {loading ? 'Searching...' : 'Search Flights'}
           </Button>
           
           {canSave && (
@@ -302,7 +304,7 @@ export function FlightSearchForm({
               variant="outline"
               size="icon"
               onClick={handleSaveSearch}
-              className="h-12 w-12"
+              className="h-11 w-11 sm:h-12 sm:w-12"
               title="Save this route"
             >
               <Heart className="h-4 w-4" />

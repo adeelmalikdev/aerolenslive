@@ -15,16 +15,16 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-card border-t py-12 lg:py-16">
+    <footer className="bg-card border-t py-8 sm:py-12 lg:py-16">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Brand */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4" aria-label="AeroLens - Go to homepage">
-              <Plane className="h-8 w-8 text-primary" aria-hidden="true" />
-              <span className="text-2xl font-bold text-foreground">AeroLens</span>
+          <div className="col-span-2 sm:col-span-2 lg:col-span-2">
+            <Link to="/" className="flex items-center gap-2 mb-3 sm:mb-4" aria-label="AeroLens - Go to homepage">
+              <Plane className="h-6 w-6 sm:h-8 sm:w-8 text-primary" aria-hidden="true" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">AeroLens</span>
             </Link>
-            <p className="text-muted-foreground mb-6 max-w-xs">
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-6 max-w-xs">
               Your trusted partner for finding the best flight deals worldwide.
             </p>
             <div className="flex gap-4">
@@ -71,8 +71,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t pt-8">
-          <p className="text-sm text-muted-foreground text-center">
+        <div className="border-t pt-6 sm:pt-8">
+          <p className="text-xs sm:text-sm text-muted-foreground text-center">
             © {new Date().getFullYear()} AeroLens. All rights reserved.
           </p>
         </div>
