@@ -36,56 +36,50 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
     setLoading(true);
 
     try {
-      // First, create the user account (but they won't be able to login until verified)
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName,
-            date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
-            phone_number: phoneNumber || null,
-            country_code: countryCode || null,
-          },
+      // Use the new server-side signup function that handles everything
+      const { data, error } = await supabase.functions.invoke('signup-with-otp', {
+        body: {
+          email,
+          password,
+          fullName,
+          dateOfBirth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+          phoneNumber: phoneNumber || null,
+          countryCode: countryCode || null,
         },
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('This email is already registered. Please sign in instead.');
-        } else {
-          toast.error(error.message);
-        }
+        console.error('Signup error:', error);
+        toast.error(error.message || 'Failed to create account. Please try again.');
         return;
       }
 
-      // Send OTP email for verification
-      const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
-        body: { email, fullName },
-      });
-
-      if (otpError) {
-        console.error('OTP email error:', otpError);
-        toast.error('Failed to send verification code. Please try again.');
+      // Check for application-level errors in the response
+      if (data?.error) {
+        console.error('Signup error:', data.error);
+        toast.error(data.error);
         return;
       }
 
-      // Store credentials for auto-login after verification
-      setPendingCredentials({ email, password });
-      setShowOtpVerification(true);
-      toast.success('Verification code sent to your email!');
+      // Only show OTP screen if signup was truly successful
+      if (data?.success) {
+        // Store credentials for auto-login after verification
+        setPendingCredentials({ email, password });
+        setShowOtpVerification(true);
+        toast.success('Verification code sent to your email!');
 
-      // Subscribe to newsletter if opted in
-      if (subscribeNewsletter) {
-        try {
-          await supabase.from('newsletter_subscribers').insert({ email });
-        } catch {
-          // Ignore errors - user is already signed up
+        // Subscribe to newsletter if opted in (don't block on this)
+        if (subscribeNewsletter) {
+          supabase.from('newsletter_subscribers').insert({ email }).then(() => {
+            // Success - no action needed
+          });
         }
+      } else {
+        toast.error('Something went wrong. Please try again.');
       }
-    } catch {
-      toast.error('An unexpected error occurred');
+    } catch (err) {
+      console.error('Unexpected signup error:', err);
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -97,21 +91,31 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
         body: { email, otp },
       });
 
-      if (error || !data?.success) {
-        toast.error(data?.error || 'Invalid verification code');
+      if (error) {
+        console.error('OTP verification error:', error);
+        toast.error(error.message || 'Verification failed. Please try again.');
+        return;
+      }
+
+      // Check for application-level errors
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (!data?.success) {
+        toast.error('Verification failed. Please try again.');
         return;
       }
 
       toast.success('Email verified successfully!');
 
-      // Send welcome email
-      try {
-        await supabase.functions.invoke('send-signup-welcome', {
-          body: { email, fullName },
-        });
-      } catch {
+      // Send welcome email (non-blocking)
+      supabase.functions.invoke('send-signup-welcome', {
+        body: { email, fullName },
+      }).catch(() => {
         // Don't fail if welcome email fails
-      }
+      });
 
       // Auto-login the user
       if (pendingCredentials) {
@@ -121,29 +125,46 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
         });
 
         if (loginError) {
-          toast.info('Please sign in with your credentials.');
+          console.error('Auto-login failed:', loginError);
+          toast.info('Account created! Please sign in with your credentials.');
         }
       }
 
       onVerificationComplete?.();
-    } catch {
+    } catch (err) {
+      console.error('Unexpected verification error:', err);
       toast.error('Failed to verify code. Please try again.');
     }
   };
 
   const handleResendOtp = async () => {
     try {
-      const { error } = await supabase.functions.invoke('send-otp-email', {
+      const { data, error } = await supabase.functions.invoke('send-otp-email', {
         body: { email, fullName },
       });
 
       if (error) {
-        toast.error('Failed to resend code. Please try again.');
+        console.error('Resend OTP error:', error);
+        toast.error(error.message || 'Failed to resend code. Please try again.');
         return;
       }
 
-      toast.success('New verification code sent!');
-    } catch {
+      // Check for application-level errors
+      if (data?.error) {
+        // Handle rate limiting specially
+        if (data.rateLimited && data.waitSeconds) {
+          toast.error(`Please wait ${data.waitSeconds} seconds before requesting a new code.`);
+        } else {
+          toast.error(data.error);
+        }
+        return;
+      }
+
+      if (data?.success) {
+        toast.success('New verification code sent!');
+      }
+    } catch (err) {
+      console.error('Unexpected resend error:', err);
       toast.error('Failed to resend code. Please try again.');
     }
   };

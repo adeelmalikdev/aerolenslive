@@ -8,10 +8,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface OtpEmailRequest {
+interface SignupRequest {
   email: string;
+  password: string;
   fullName?: string;
-  userId?: string;
+  dateOfBirth?: string;
+  phoneNumber?: string;
+  countryCode?: string;
 }
 
 function generateOtp(): string {
@@ -23,20 +26,30 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Create Supabase client with service role
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  let createdUserId: string | null = null;
   let otpRecordId: string | null = null;
 
   try {
-    const { email, fullName, userId }: OtpEmailRequest = await req.json();
+    const { email, password, fullName, dateOfBirth, phoneNumber, countryCode }: SignupRequest = await req.json();
 
-    if (!email) {
-      console.error("Missing email in request");
+    // Validate required fields
+    if (!email || !password) {
       return new Response(
-        JSON.stringify({ error: "Email is required" }),
+        JSON.stringify({ error: "Email and password are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: "Password must be at least 6 characters" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -45,36 +58,68 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    console.log("Generating OTP for email:", normalizedEmail);
+    console.log("Starting signup process for:", normalizedEmail);
 
-    // Check for rate limiting - last_sent_at within 60 seconds
-    const { data: existingOtp } = await supabase
-      .from("otp_verifications")
-      .select("id, last_sent_at")
-      .eq("email", normalizedEmail)
-      .eq("verified", false)
-      .single();
+    // Check if user already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(
+      u => u.email?.toLowerCase() === normalizedEmail
+    );
 
-    if (existingOtp?.last_sent_at) {
-      const lastSent = new Date(existingOtp.last_sent_at);
-      const now = new Date();
-      const secondsSinceLastSent = (now.getTime() - lastSent.getTime()) / 1000;
-      
-      if (secondsSinceLastSent < 60) {
-        const waitSeconds = Math.ceil(60 - secondsSinceLastSent);
-        console.log("Rate limited - must wait", waitSeconds, "seconds");
+    if (existingUser) {
+      // Check if user is already confirmed
+      if (existingUser.email_confirmed_at) {
+        console.log("User already exists and is confirmed");
         return new Response(
-          JSON.stringify({ 
-            error: `Please wait ${waitSeconds} seconds before requesting a new code`,
-            rateLimited: true,
-            waitSeconds 
-          }),
+          JSON.stringify({ error: "This email is already registered. Please sign in instead." }),
           {
-            status: 429,
+            status: 400,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
       }
+      
+      // User exists but not confirmed - we can resend OTP
+      console.log("User exists but not confirmed, will resend OTP");
+      createdUserId = existingUser.id;
+    } else {
+      // Create the user with email_confirm: false (no auto-session)
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: normalizedEmail,
+        password: password,
+        email_confirm: false, // CRITICAL: Don't auto-confirm, no session created
+        user_metadata: {
+          full_name: fullName || null,
+          date_of_birth: dateOfBirth || null,
+          phone_number: phoneNumber || null,
+          country_code: countryCode || null,
+        },
+      });
+
+      if (authError) {
+        console.error("Error creating user:", authError);
+        
+        if (authError.message?.includes("already registered")) {
+          return new Response(
+            JSON.stringify({ error: "This email is already registered. Please sign in instead." }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ error: authError.message || "Failed to create account" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      createdUserId = authData.user.id;
+      console.log("User created with ID:", createdUserId);
     }
 
     // Delete any existing OTPs for this email
@@ -83,18 +128,17 @@ const handler = async (req: Request): Promise<Response> => {
       .delete()
       .eq("email", normalizedEmail);
 
-    // Generate OTP
+    // Generate and store OTP
     const otpCode = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Store OTP in database
     const { data: insertedOtp, error: insertError } = await supabase
       .from("otp_verifications")
       .insert({
         email: normalizedEmail,
         otp_code: otpCode,
         expires_at: expiresAt.toISOString(),
-        user_id: userId || null,
+        user_id: createdUserId,
         attempt_count: 0,
         last_sent_at: new Date().toISOString(),
       })
@@ -103,8 +147,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (insertError) {
       console.error("Error storing OTP:", insertError);
+      // Rollback: delete the created user
+      if (createdUserId) {
+        await supabase.auth.admin.deleteUser(createdUserId);
+      }
       return new Response(
-        JSON.stringify({ error: "Failed to generate verification code" }),
+        JSON.stringify({ error: "Failed to setup verification. Please try again." }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -114,12 +162,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     otpRecordId = insertedOtp.id;
 
-    // Initialize Resend
+    // Send OTP email
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
-      // Clean up the OTP record since we can't send the email
+      // Rollback
       await supabase.from("otp_verifications").delete().eq("id", otpRecordId);
+      if (createdUserId) {
+        await supabase.auth.admin.deleteUser(createdUserId);
+      }
       return new Response(
         JSON.stringify({ error: "Email service not configured. Please contact support." }),
         {
@@ -131,7 +182,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resend = new Resend(resendApiKey);
 
-    // Send email with OTP
     const emailResponse = await resend.emails.send({
       from: "AeroLens <onboarding@resend.dev>",
       to: [normalizedEmail],
@@ -186,20 +236,21 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    // Check for Resend errors - this is the critical fix!
+    // CRITICAL: Check for Resend errors
     if (emailResponse.error) {
       console.error("Resend API error:", emailResponse.error);
       
-      // Clean up the OTP record since email failed
+      // Rollback everything
       await supabase.from("otp_verifications").delete().eq("id", otpRecordId);
+      if (createdUserId) {
+        await supabase.auth.admin.deleteUser(createdUserId);
+      }
       
-      // Provide user-friendly error message
       let userMessage = "Failed to send verification email. Please try again.";
-      
-      // Check for common Resend errors
       const errorMessage = emailResponse.error.message || "";
+      
       if (errorMessage.includes("validation_error") || errorMessage.includes("testing emails")) {
-        userMessage = "Email service is in test mode. The sender domain needs to be verified. Please contact support.";
+        userMessage = "Email service is in test mode. Please verify a domain in Resend and update the sender email address.";
       } else if (errorMessage.includes("rate_limit")) {
         userMessage = "Too many email requests. Please wait a moment and try again.";
       }
@@ -207,7 +258,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           error: userMessage,
-          details: emailResponse.error.message 
+          emailError: true 
         }),
         {
           status: 400,
@@ -216,21 +267,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("OTP email sent successfully:", emailResponse);
+    console.log("Signup successful, OTP sent to:", normalizedEmail);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Verification code sent" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Verification code sent to your email",
+        userId: createdUserId 
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   } catch (error: any) {
-    console.error("Error in send-otp-email function:", error);
+    console.error("Error in signup-with-otp:", error);
     
-    // Clean up OTP record on any error
+    // Rollback on any error
     if (otpRecordId) {
       await supabase.from("otp_verifications").delete().eq("id", otpRecordId);
+    }
+    if (createdUserId) {
+      await supabase.auth.admin.deleteUser(createdUserId);
     }
     
     return new Response(
