@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Check, Download, Plane, Copy, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ interface BookingSuccessModalProps {
   arrivalTime: string;
   cabinClass: string;
   passengerName: string;
+  autoDownload?: boolean;
 }
 
 export function BookingSuccessModal({
@@ -33,9 +34,23 @@ export function BookingSuccessModal({
   arrivalTime,
   cabinClass,
   passengerName,
+  autoDownload = false,
 }: BookingSuccessModalProps) {
   const [downloading, setDownloading] = useState(false);
+  const [hasAutoDownloaded, setHasAutoDownloaded] = useState(false);
   const { toast } = useToast();
+
+  // Auto-download boarding pass when modal opens
+  React.useEffect(() => {
+    if (open && autoDownload && !hasAutoDownloaded && bookingReference) {
+      setHasAutoDownloaded(true);
+      // Small delay to let modal render first
+      const timer = setTimeout(() => {
+        downloadBoardingPass();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [open, autoDownload, hasAutoDownloaded, bookingReference]);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);

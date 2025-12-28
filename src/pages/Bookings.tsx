@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plane, CheckCircle, Ticket } from 'lucide-react';
+import { ArrowLeft, Plane, CheckCircle, Ticket, Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { useBookings, Booking } from '@/hooks/useBookings';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Bookings() {
   const { user, loading: authLoading } = useAuth();
@@ -93,6 +95,9 @@ interface BookingCardProps {
 }
 
 function BookingCard({ booking, onCheckIn }: BookingCardProps) {
+  const [downloading, setDownloading] = useState(false);
+  const { toast } = useToast();
+  
   const flightData = booking.flight_data as Record<string, unknown>;
   const origin = (flightData?.origin as string) || 'N/A';
   const destination = (flightData?.destination as string) || 'N/A';
@@ -101,6 +106,58 @@ function BookingCard({ booking, onCheckIn }: BookingCardProps) {
   const departureTime = flightData?.departureTime as string;
   const arrivalTime = flightData?.arrivalTime as string;
   const price = flightData?.price as number;
+  const cabinClass = (flightData?.cabinClass as string) || 'Economy';
+
+  const downloadBoardingPass = async () => {
+    setDownloading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-boarding-pass', {
+        body: {
+          bookingReference: booking.booking_reference,
+          passengerName: booking.passenger_last_name,
+          flightNumber,
+          airline,
+          origin,
+          destination,
+          departureTime,
+          arrivalTime,
+          cabinClass,
+        },
+      });
+
+      if (error) throw error;
+
+      const byteCharacters = atob(data.pdf);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast({
+        title: 'Downloaded!',
+        description: 'Your boarding pass has been downloaded.',
+      });
+    } catch (error) {
+      console.error('Failed to download boarding pass:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Unable to generate boarding pass. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const getStatusBadge = () => {
     switch (booking.status) {
@@ -195,14 +252,27 @@ function BookingCard({ booking, onCheckIn }: BookingCardProps) {
           </div>
         </div>
 
-        {booking.status === 'confirmed' && (
-          <div className="mt-6 pt-4 border-t flex justify-end">
+        <div className="mt-6 pt-4 border-t flex justify-end gap-3">
+          <Button 
+            variant="outline" 
+            onClick={downloadBoardingPass} 
+            disabled={downloading}
+            className="gap-2"
+          >
+            {downloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Boarding Pass
+          </Button>
+          {booking.status === 'confirmed' && (
             <Button onClick={() => onCheckIn(booking.id)} className="gap-2">
               <CheckCircle className="h-4 w-4" />
               Check In
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
