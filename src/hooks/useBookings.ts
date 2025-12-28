@@ -58,7 +58,9 @@ export function useBookings() {
 
   const createBooking = async (
     flightData: Record<string, unknown>,
-    passengerLastName: string
+    passengerLastName: string,
+    userEmail?: string,
+    userName?: string
   ): Promise<Booking | null> => {
     if (!user) {
       toast({
@@ -97,9 +99,41 @@ export function useBookings() {
 
       if (error) throw error;
 
+      // Send confirmation email if user email is available
+      if (userEmail) {
+        try {
+          const segments = [{
+            departure: String(flightData.origin || ''),
+            arrival: String(flightData.destination || ''),
+            departureTime: String(flightData.departureTime || ''),
+            arrivalTime: String(flightData.arrivalTime || ''),
+            airline: String(flightData.airline || ''),
+            flightNumber: String(flightData.flightNumber || ''),
+            duration: String(flightData.duration || ''),
+          }];
+
+          await supabase.functions.invoke('send-booking-confirmation', {
+            body: {
+              to: userEmail,
+              userName: userName || nameValidation.data,
+              bookingReference,
+              passengerName: nameValidation.data,
+              segments,
+              totalPrice: String(flightData.price || '0'),
+              currency: 'USD',
+              cabinClass: String(flightData.cabinClass || 'Economy'),
+            },
+          });
+          console.log('Booking confirmation email sent');
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Don't fail the booking if email fails
+        }
+      }
+
       toast({
         title: 'Booking Confirmed!',
-        description: `Your booking reference is ${bookingReference}`,
+        description: `Your booking reference is ${bookingReference}. Check your email for confirmation.`,
       });
 
       await fetchBookings();

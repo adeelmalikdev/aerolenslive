@@ -58,7 +58,9 @@ export function usePriceAlerts() {
     destinationCode: string,
     destinationName: string,
     targetPrice: number,
-    currentPrice?: number
+    currentPrice?: number,
+    userEmail?: string,
+    userName?: string
   ): Promise<boolean> => {
     if (!user) {
       toast({
@@ -134,7 +136,7 @@ export function usePriceAlerts() {
 
       toast({
         title: 'Price Alert Created!',
-        description: `We'll notify you when ${originCodeVal.data} → ${destCodeVal.data} drops below $${priceVal.data}`,
+        description: `We'll notify you at ${userEmail || 'your email'} when ${originCodeVal.data} → ${destCodeVal.data} drops below $${priceVal.data}`,
       });
 
       await fetchAlerts();
@@ -148,6 +150,36 @@ export function usePriceAlerts() {
       return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendPriceAlertEmail = async (
+    alert: PriceAlert,
+    newPrice: number,
+    userEmail: string,
+    userName?: string
+  ): Promise<boolean> => {
+    try {
+      const { error } = await supabase.functions.invoke('send-price-alert-email', {
+        body: {
+          to: userEmail,
+          userName: userName || 'Traveler',
+          originName: alert.origin_name,
+          originCode: alert.origin_code,
+          destinationName: alert.destination_name,
+          destinationCode: alert.destination_code,
+          targetPrice: alert.target_price,
+          currentPrice: newPrice,
+          currency: 'USD',
+        },
+      });
+
+      if (error) throw error;
+      console.log('Price alert email sent successfully');
+      return true;
+    } catch (err) {
+      console.error('Failed to send price alert email:', err);
+      return false;
     }
   };
 
@@ -229,6 +261,7 @@ export function usePriceAlerts() {
     createAlert,
     updateAlert,
     deleteAlert,
+    sendPriceAlertEmail,
     refetch: fetchAlerts,
   };
 }
