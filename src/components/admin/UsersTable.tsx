@@ -54,12 +54,12 @@ export function UsersTable({ users, onUserDeleted }: UsersTableProps) {
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', userId);
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({ 
         title: 'User deleted', 
