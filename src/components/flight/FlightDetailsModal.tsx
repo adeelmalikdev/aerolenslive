@@ -343,6 +343,7 @@ export function FlightDetailsModal({
       <BookingSuccessModal
         open={showSuccessModal}
         onOpenChange={setShowSuccessModal}
+        autoDownload={true}
         {...bookingData}
       />
     )}
