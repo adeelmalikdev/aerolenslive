@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.send-price-alert-set]
 verify_jwt = false
+
+[functions.send-hotel-booking-confirmation]
+verify_jwt = false

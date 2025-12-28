@@ -1,11 +1,15 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
-import { X, Star, MapPin, Calendar, Users, Check, CreditCard } from 'lucide-react';
+import { X, Star, MapPin, Calendar, Check, CreditCard, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { HotelOffer } from '@/types/hotel';
-import { toast } from 'sonner';
+import { useHotelBookings } from '@/hooks/useHotelBookings';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HotelDetailsModalProps {
   hotel: HotelOffer | null;
@@ -14,6 +18,11 @@ interface HotelDetailsModalProps {
 }
 
 export function HotelDetailsModal({ hotel, open, onClose }: HotelDetailsModalProps) {
+  const [guestLastName, setGuestLastName] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+  const { createBooking, loading } = useHotelBookings();
+  const { user } = useAuth();
+
   if (!hotel) return null;
 
   const offer = hotel.offers?.[0];
@@ -27,11 +36,36 @@ export function HotelDetailsModal({ hotel, open, onClose }: HotelDetailsModalPro
   const checkOut = new Date(offer.checkOutDate);
   const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
-  const handleBook = () => {
-    toast.success('Hotel booking confirmed!', {
-      description: `Your stay at ${hotel.hotel.name} has been booked.`
-    });
-    onClose();
+  const handleBook = async () => {
+    if (!guestLastName.trim()) return;
+    
+    setIsBooking(true);
+    
+    const hotelData = {
+      hotelName: hotel.hotel.name,
+      hotelAddress: hotel.hotel.address?.lines?.join(', ') + (hotel.hotel.address?.cityName ? `, ${hotel.hotel.address.cityName}` : ''),
+      roomType: offer.room.typeEstimated?.category?.replace(/_/g, ' ') || 'Standard Room',
+      price: price.toFixed(2),
+      currency,
+      hotelId: hotel.hotel.hotelId,
+      rating: hotel.hotel.rating,
+    };
+
+    const result = await createBooking(
+      hotelData,
+      guestLastName,
+      offer.checkInDate,
+      offer.checkOutDate,
+      user?.email || undefined,
+      user?.user_metadata?.full_name || undefined
+    );
+
+    setIsBooking(false);
+    
+    if (result) {
+      setGuestLastName('');
+      onClose();
+    }
   };
 
   return (
@@ -163,6 +197,17 @@ export function HotelDetailsModal({ hotel, open, onClose }: HotelDetailsModalPro
 
           <Separator />
 
+          {/* Guest details input */}
+          <div className="space-y-2">
+            <Label htmlFor="guest-last-name">Guest Last Name</Label>
+            <Input
+              id="guest-last-name"
+              placeholder="Enter guest last name"
+              value={guestLastName}
+              onChange={(e) => setGuestLastName(e.target.value)}
+            />
+          </div>
+
           {/* Price and booking */}
           <div className="flex items-center justify-between">
             <div>
@@ -173,11 +218,30 @@ export function HotelDetailsModal({ hotel, open, onClose }: HotelDetailsModalPro
                 Total for {nights} night{nights > 1 ? 's' : ''}
               </div>
             </div>
-            <Button size="lg" onClick={handleBook}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Book Now
+            <Button 
+              size="lg" 
+              onClick={handleBook} 
+              disabled={!guestLastName.trim() || isBooking || loading || !user}
+            >
+              {isBooking || loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Booking...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Book Now
+                </>
+              )}
             </Button>
           </div>
+          
+          {!user && (
+            <p className="text-sm text-muted-foreground text-center">
+              Please sign in to book this hotel
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
