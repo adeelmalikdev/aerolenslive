@@ -8,6 +8,9 @@ export interface Profile {
   user_id: string;
   full_name: string | null;
   avatar_url: string | null;
+  date_of_birth: string | null;
+  phone_number: string | null;
+  country_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,7 +49,13 @@ export function useProfile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const updateProfile = async (updates: { full_name?: string | null; avatar_url?: string | null }) => {
+  const updateProfile = async (updates: { 
+    full_name?: string | null; 
+    avatar_url?: string | null;
+    date_of_birth?: string | null;
+    phone_number?: string | null;
+    country_code?: string | null;
+  }) => {
     if (!user) return false;
 
     try {
