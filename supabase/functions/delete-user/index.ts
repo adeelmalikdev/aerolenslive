@@ -87,7 +87,7 @@ serve(async (req) => {
 
     console.log(`Admin ${requestingUser.id} is deleting user ${userId}`);
 
-    // Delete the user from auth.users (this will cascade to profiles due to foreign key)
+    // 1) Delete the user from the authentication system
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
@@ -98,12 +98,37 @@ serve(async (req) => {
       });
     }
 
+    // 2) Best-effort cleanup of public tables (prevents orphaned profile rows)
+    const cleanup = await Promise.allSettled([
+      supabaseAdmin.from('profiles').delete().eq('user_id', userId),
+      supabaseAdmin.from('user_roles').delete().eq('user_id', userId),
+      supabaseAdmin.from('bookings').delete().eq('user_id', userId),
+      supabaseAdmin.from('hotel_bookings').delete().eq('user_id', userId),
+      supabaseAdmin.from('saved_searches').delete().eq('user_id', userId),
+      supabaseAdmin.from('price_alerts').delete().eq('user_id', userId),
+    ]);
+
+    const cleanupErrors = cleanup
+      .map((r) => (r.status === 'fulfilled' ? r.value?.error : r.reason))
+      .filter(Boolean);
+
+    if (cleanupErrors.length > 0) {
+      console.warn('User deleted, but some cleanup operations failed:', cleanupErrors);
+    }
+
     console.log(`User ${userId} deleted successfully`);
 
-    return new Response(JSON.stringify({ success: true, message: 'User deleted successfully' }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'User deleted successfully',
+        cleanupErrors: cleanupErrors.length ? cleanupErrors.map((e: any) => e?.message ?? String(e)) : undefined,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
 
   } catch (error) {
     console.error('Error in delete-user function:', error);
