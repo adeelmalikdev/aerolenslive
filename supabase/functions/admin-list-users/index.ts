@@ -33,15 +33,19 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('Attempting to verify user with token length:', token.length);
+    
     const { data: { user: requestingUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !requestingUser) {
-      console.error('Failed to get requesting user:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('Failed to get requesting user:', userError?.message || 'No user returned');
+      return new Response(JSON.stringify({ error: 'Unauthorized', details: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Verified user:', requestingUser.id, requestingUser.email);
 
     // Check if requesting user is admin
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -50,6 +54,8 @@ serve(async (req) => {
       .eq('user_id', requestingUser.id)
       .eq('role', 'admin')
       .maybeSingle();
+
+    console.log('Role check result:', { roleData, roleError: roleError?.message });
 
     if (roleError || !roleData) {
       console.error('User is not an admin:', roleError);
