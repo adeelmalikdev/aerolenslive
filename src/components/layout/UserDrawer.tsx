@@ -61,9 +61,10 @@ export function UserDrawer() {
   };
 
   const activeAlerts = alerts.filter(a => a.is_active);
-  const confirmedFlightBookings = bookings.filter(b => b.status === 'confirmed');
-  const confirmedHotelBookings = hotelBookings.filter(b => b.status === 'confirmed');
-  const totalBookings = confirmedFlightBookings.length + confirmedHotelBookings.length;
+  // Count all active bookings (not cancelled)
+  const activeFlightBookings = bookings.filter(b => b.status !== 'cancelled');
+  const activeHotelBookings = hotelBookings.filter(b => b.status !== 'cancelled');
+  const totalBookings = activeFlightBookings.length + activeHotelBookings.length;
   const priceDroppedAlerts = alerts.filter(a => a.current_price && a.current_price <= a.target_price);
 
   return (
