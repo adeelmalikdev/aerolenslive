@@ -10,6 +10,8 @@ import { AdminStats } from '@/components/admin/AdminStats';
 import { UsersTable } from '@/components/admin/UsersTable';
 import { SubscribersTable } from '@/components/admin/SubscribersTable';
 import { BookingsTable } from '@/components/admin/BookingsTable';
+import { AnalyticsCharts } from '@/components/admin/AnalyticsCharts';
+import { ActivityLogs } from '@/components/admin/ActivityLogs';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -99,15 +101,25 @@ export default function Admin() {
           activeSubscribers={activeSubscribers}
         />
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList>
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             <TabsTrigger value="subscribers">Newsletter ({subscribers.length})</TabsTrigger>
             <TabsTrigger value="bookings">Bookings ({bookings.length})</TabsTrigger>
+            <TabsTrigger value="activity">Activity Logs</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="overview">
+            <AnalyticsCharts
+              users={users}
+              subscribers={subscribers}
+              bookings={bookings}
+            />
+          </TabsContent>
+
           <TabsContent value="users">
-            <UsersTable users={users} />
+            <UsersTable users={users} onUserDeleted={refetch} />
           </TabsContent>
 
           <TabsContent value="subscribers">
@@ -123,6 +135,10 @@ export default function Admin() {
               bookings={bookings}
               onUpdateStatus={updateBookingStatus}
             />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLogs />
           </TabsContent>
         </Tabs>
       </div>
