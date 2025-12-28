@@ -1,5 +1,17 @@
 project_id = "myjpghphrgyzdqpeebkv"
 
+[functions.search-airports]
+verify_jwt = false
+
+[functions.search-flights]
+verify_jwt = false
+
+[functions.search-hotels]
+verify_jwt = false
+
+[functions.amadeus-auth]
+verify_jwt = false
+
 [functions.send-price-alert-email]
 verify_jwt = false
 
