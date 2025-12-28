@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useBookings } from '@/hooks/useBookings';
+import { useAuth } from '@/hooks/useAuth';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export function CheckInForm() {
@@ -10,6 +11,7 @@ export function CheckInForm() {
   const [lastName, setLastName] = useState('');
   const [checkInResult, setCheckInResult] = useState<'success' | 'error' | 'already' | null>(null);
   const { checkIn, findBooking, loading } = useBookings();
+  const { user } = useAuth();
 
   const handleCheckIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,11 @@ export function CheckInForm() {
       return;
     }
 
-    const success = await checkIn(booking.id);
+    const success = await checkIn(
+      booking.id,
+      user?.email || undefined,
+      user?.user_metadata?.full_name || undefined
+    );
     setCheckInResult(success ? 'success' : 'error');
   };
 
@@ -45,7 +51,7 @@ export function CheckInForm() {
         </div>
         <h3 className="text-xl font-semibold">Check-In Complete!</h3>
         <p className="text-muted-foreground">
-          You're all set for your flight. Your boarding pass will be available at the gate.
+          You're all set for your flight. Check your email for confirmation and boarding details.
         </p>
         <Button variant="outline" onClick={resetForm}>
           Check In Another Passenger

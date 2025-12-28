@@ -56,6 +56,32 @@ export function useBookings() {
     fetchBookings();
   }, [fetchBookings]);
 
+  // Realtime subscription for bookings
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Booking change received:', payload);
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchBookings]);
+
   const createBooking = async (
     flightData: Record<string, unknown>,
     passengerLastName: string,
@@ -172,9 +198,22 @@ export function useBookings() {
     }
   };
 
-  const checkIn = async (bookingId: string): Promise<boolean> => {
+  const checkIn = async (
+    bookingId: string,
+    userEmail?: string,
+    userName?: string
+  ): Promise<boolean> => {
     setLoading(true);
     try {
+      // Get the booking details first
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('bookings')
         .update({ status: 'checked_in' })
@@ -182,9 +221,32 @@ export function useBookings() {
 
       if (error) throw error;
 
+      // Send check-in confirmation email
+      if (userEmail && booking) {
+        try {
+          const flightData = booking.flight_data as Record<string, unknown>;
+          await supabase.functions.invoke('send-checkin-confirmation', {
+            body: {
+              to: userEmail,
+              userName: userName || booking.passenger_last_name,
+              bookingReference: booking.booking_reference,
+              passengerName: booking.passenger_last_name,
+              origin: String(flightData.origin || ''),
+              destination: String(flightData.destination || ''),
+              departureTime: String(flightData.departureTime || ''),
+              airline: String(flightData.airline || ''),
+              flightNumber: String(flightData.flightNumber || ''),
+            },
+          });
+          console.log('Check-in confirmation email sent');
+        } catch (emailError) {
+          console.error('Failed to send check-in email:', emailError);
+        }
+      }
+
       toast({
         title: 'Check-in Complete',
-        description: 'You have successfully checked in for your flight.',
+        description: 'You have successfully checked in for your flight. Check your email for confirmation.',
       });
 
       await fetchBookings();

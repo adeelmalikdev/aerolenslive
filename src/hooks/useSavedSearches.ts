@@ -45,6 +45,32 @@ export function useSavedSearches() {
     fetchSavedSearches();
   }, [fetchSavedSearches]);
 
+  // Realtime subscription for saved searches
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('saved-searches-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_searches',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Saved search change received:', payload);
+          fetchSavedSearches();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchSavedSearches]);
+
   const saveSearch = async (
     originCode: string,
     originName: string,

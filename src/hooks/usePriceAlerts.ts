@@ -52,6 +52,32 @@ export function usePriceAlerts() {
     fetchAlerts();
   }, [fetchAlerts]);
 
+  // Realtime subscription for price alerts
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('price-alerts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'price_alerts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Price alert change received:', payload);
+          fetchAlerts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchAlerts]);
+
   const createAlert = async (
     originCode: string,
     originName: string,
@@ -133,6 +159,27 @@ export function usePriceAlerts() {
         }]);
 
       if (error) throw error;
+
+      // Send price alert set confirmation email
+      if (userEmail) {
+        try {
+          await supabase.functions.invoke('send-price-alert-set', {
+            body: {
+              to: userEmail,
+              userName: userName || 'Traveler',
+              originName: originNameVal.data,
+              originCode: originCodeVal.data,
+              destinationName: destNameVal.data,
+              destinationCode: destCodeVal.data,
+              targetPrice: priceVal.data,
+              currency: 'USD',
+            },
+          });
+          console.log('Price alert set email sent');
+        } catch (emailError) {
+          console.error('Failed to send price alert set email:', emailError);
+        }
+      }
 
       toast({
         title: 'Price Alert Created!',
