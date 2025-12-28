@@ -120,6 +120,24 @@ const handler = async (req: Request): Promise<Response> => {
 
       createdUserId = authData.user.id;
       console.log("User created with ID:", createdUserId);
+
+      // Create profile record (since admin.createUser bypasses auth triggers)
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: createdUserId,
+          full_name: fullName || null,
+          date_of_birth: dateOfBirth || null,
+          phone_number: phoneNumber || null,
+          country_code: countryCode || null,
+        });
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        // Non-blocking - profile can be created later
+      } else {
+        console.log("Profile created for user:", createdUserId);
+      }
     }
 
     // Delete any existing OTPs for this email
