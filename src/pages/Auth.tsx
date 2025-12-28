@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plane, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link } from 'react-router-dom';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -15,6 +17,8 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
 
   useEffect(() => {
     document.title = 'Sign In | AeroLens';
@@ -105,6 +109,15 @@ const Auth = () => {
         }
       } else {
         toast.success('Account created! Welcome to AeroLens!');
+        
+        // Subscribe to newsletter if opted in
+        if (subscribeNewsletter) {
+          try {
+            await supabase.from('newsletter_subscribers').insert({ email });
+          } catch {
+            // Ignore errors - user is already signed up
+          }
+        }
         // Auth state listener will handle navigation
       }
     } catch (error) {
@@ -205,7 +218,37 @@ const Auth = () => {
                     autoComplete="new-password"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="terms"
+                      checked={agreeToTerms}
+                      onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
+                      required
+                    />
+                    <Label htmlFor="terms" className="text-sm font-normal leading-tight cursor-pointer">
+                      I agree to the{' '}
+                      <Link to="/terms" className="text-primary underline hover:no-underline">
+                        Terms and Conditions
+                      </Link>{' '}
+                      and{' '}
+                      <Link to="/privacy" className="text-primary underline hover:no-underline">
+                        Privacy Policy
+                      </Link>
+                    </Label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="newsletter"
+                      checked={subscribeNewsletter}
+                      onCheckedChange={(checked) => setSubscribeNewsletter(checked === true)}
+                    />
+                    <Label htmlFor="newsletter" className="text-sm font-normal leading-tight cursor-pointer">
+                      I'd like to receive updates, flight deals, and newsletters
+                    </Label>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading || !agreeToTerms}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" /> : null}
                   Create Account
                 </Button>
