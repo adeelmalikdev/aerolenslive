@@ -83,6 +83,42 @@ export type Database = {
         }
         Relationships: []
       }
+      hotel_bookings: {
+        Row: {
+          booking_reference: string
+          check_in_date: string
+          check_out_date: string
+          created_at: string | null
+          guest_last_name: string
+          hotel_data: Json
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          booking_reference: string
+          check_in_date: string
+          check_out_date: string
+          created_at?: string | null
+          guest_last_name: string
+          hotel_data: Json
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          booking_reference?: string
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string | null
+          guest_last_name?: string
+          hotel_data?: Json
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string
