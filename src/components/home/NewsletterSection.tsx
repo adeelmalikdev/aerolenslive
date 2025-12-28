@@ -1,18 +1,46 @@
-import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNewsletter } from '@/hooks/useNewsletter';
+import { supabase } from '@/integrations/supabase/client';
 
 export function NewsletterSection() {
   const [email, setEmail] = useState('');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { subscribe, loading } = useNewsletter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        setIsAuthenticated(true);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        setIsAuthenticated(true);
+      } else {
+        setUserEmail(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      const success = await subscribe(email);
-      if (success) setEmail('');
+    const emailToSubscribe = isAuthenticated ? userEmail : email;
+    if (emailToSubscribe) {
+      const success = await subscribe(emailToSubscribe);
+      if (success && !isAuthenticated) setEmail('');
     }
   };
 
@@ -28,14 +56,21 @@ export function NewsletterSection() {
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
-            <Input
-              type="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 h-12 bg-primary-foreground text-foreground placeholder:text-muted-foreground border-0"
-              required
-            />
+            {isAuthenticated ? (
+              <div className="flex-1 h-12 bg-primary-foreground text-foreground rounded-md flex items-center px-4 text-left">
+                <Check className="h-4 w-4 text-green-600 mr-2" />
+                <span className="truncate">{userEmail}</span>
+              </div>
+            ) : (
+              <Input
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 h-12 bg-primary-foreground text-foreground placeholder:text-muted-foreground border-0"
+                required
+              />
+            )}
             <Button 
               type="submit"
               variant="secondary"
