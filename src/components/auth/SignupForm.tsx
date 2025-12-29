@@ -51,15 +51,18 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
       if (error) {
         console.error('Signup error:', error);
         // Handle FunctionsHttpError - extract the actual error message from the response
-        if (error.name === 'FunctionsHttpError') {
+        if (error.name === 'FunctionsHttpError' && error.context) {
           try {
-            const errorData = await error.context?.json?.();
+            // error.context is a Response object
+            const response = error.context as Response;
+            const errorData = await response.json();
             if (errorData?.error) {
               toast.error(errorData.error);
               return;
             }
-          } catch {
-            // If we can't parse the error, fall through to default message
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
+            // Fall through to default message
           }
         }
         toast.error(error.message || 'Failed to create account. Please try again.');
