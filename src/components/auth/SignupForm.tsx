@@ -50,6 +50,18 @@ export function SignupForm({ onVerificationComplete }: SignupFormProps) {
 
       if (error) {
         console.error('Signup error:', error);
+        // Handle FunctionsHttpError - extract the actual error message from the response
+        if (error.name === 'FunctionsHttpError') {
+          try {
+            const errorData = await error.context?.json?.();
+            if (errorData?.error) {
+              toast.error(errorData.error);
+              return;
+            }
+          } catch {
+            // If we can't parse the error, fall through to default message
+          }
+        }
         toast.error(error.message || 'Failed to create account. Please try again.');
         return;
       }
