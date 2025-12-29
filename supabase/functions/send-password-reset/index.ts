@@ -43,7 +43,14 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to generate reset link");
     }
 
-    const resetLink = data.properties?.action_link;
+    const hashedToken = data.properties?.hashed_token;
+    const actionLink = data.properties?.action_link;
+
+    // Prefer token_hash links (resilient against email clients that prefetch GET /verify links)
+    const resetLink = hashedToken
+      ? `${redirectUrl}${redirectUrl.includes("?") ? "&" : "?"}token_hash=${encodeURIComponent(hashedToken)}&type=recovery`
+      : actionLink;
+
     if (!resetLink) {
       throw new Error("No reset link generated");
     }
