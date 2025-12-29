@@ -24,7 +24,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       const { data, error } = await supabase.functions.invoke('send-password-reset', {
         body: {
           email,
-          redirectUrl: `${window.location.origin}/auth?mode=reset`,
+          redirectUrl: `${window.location.origin}/auth?mode=recovery`,
         },
       });
 

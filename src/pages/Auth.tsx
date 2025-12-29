@@ -37,11 +37,51 @@ const Auth = () => {
   // Handle password reset token from URL hash
   useEffect(() => {
     const handlePasswordResetToken = async () => {
-      // Check for hash fragment containing access_token (Supabase password reset flow)
+      // Check for hash fragment containing access_token (Lovable Cloud password reset flow)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
-      const type = hashParams.get('type');
+      const hashType = hashParams.get('type');
+
+      // Support token_hash-based recovery links (more resilient than GET /verify links)
+      const tokenHash = searchParams.get('token_hash');
+      const queryType = searchParams.get('type');
+
+      if ((queryType === 'recovery' || hashType === 'recovery') && tokenHash) {
+        // Set both state AND ref immediately before verifyOtp
+        // This is critical because onAuthStateChange can fire during auth transitions
+        setIsProcessingToken(true);
+        isProcessingTokenRef.current = true;
+        viewRef.current = 'reset';
+
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: tokenHash,
+          });
+
+          if (error) {
+            console.error('Error verifying recovery token hash:', error);
+            toast.error('Invalid or expired reset link. Please request a new one.');
+            setView('forgot');
+            viewRef.current = 'forgot';
+            window.history.replaceState(null, '', window.location.pathname);
+          } else {
+            setView('reset');
+            window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+          }
+        } catch (err) {
+          console.error('Error processing recovery token hash:', err);
+          toast.error('Failed to process reset link. Please try again.');
+          setView('forgot');
+          viewRef.current = 'forgot';
+          window.history.replaceState(null, '', window.location.pathname);
+        } finally {
+          setIsProcessingToken(false);
+          isProcessingTokenRef.current = false;
+        }
+        return;
+      }
 
       // Also check for mode=reset in query params first
       const mode = searchParams.get('mode');
@@ -58,7 +98,7 @@ const Auth = () => {
         return;
       }
 
-      if (type === 'recovery' && accessToken && refreshToken) {
+      if (hashType === 'recovery' && accessToken && refreshToken) {
         // Set both state AND ref immediately before setSession
         // This is critical because onAuthStateChange fires synchronously
         setIsProcessingToken(true);
@@ -121,7 +161,13 @@ const Auth = () => {
       // Also check URL for reset mode
       const urlParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      if (urlParams.get('mode') === 'reset' || hashParams.get('type') === 'recovery') return;
+      if (
+        urlParams.get('mode') === 'reset' ||
+        urlParams.get('mode') === 'recovery' ||
+        !!urlParams.get('token_hash') ||
+        hashParams.get('type') === 'recovery'
+      )
+        return;
       
       if (session) {
         setTimeout(() => {
@@ -135,7 +181,9 @@ const Auth = () => {
     // Initial session check
     const mode = searchParams.get('mode');
     const hash = window.location.hash;
-    if (mode !== 'reset' && !hash.includes('type=recovery')) {
+    const hasRecoveryQuery = mode === 'recovery' || !!searchParams.get('token_hash') || searchParams.get('type') === 'recovery';
+
+    if (mode !== 'reset' && !hasRecoveryQuery && !hash.includes('type=recovery')) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session && viewRef.current !== 'reset' && !isProcessingTokenRef.current) {
           checkAdminAndRedirect(session.user.id);
